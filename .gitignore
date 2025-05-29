@@ -12,6 +12,22 @@ db.sqlite3
 # VSCode or PyCharm
 .vscode/
 .idea/
-venv/
-.venv/
+
 env/
+.venv/
+venv/
+.env
+
+
+
+
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore SQLite database
+db.sqlite3
+
+# Ignore virtual environment folders (optional but recommended)
+
