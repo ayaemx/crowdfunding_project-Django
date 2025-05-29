@@ -12,5 +12,6 @@ db.sqlite3
 # VSCode or PyCharm
 .vscode/
 .idea/
-.env
+venv/
 .venv/
+env/
