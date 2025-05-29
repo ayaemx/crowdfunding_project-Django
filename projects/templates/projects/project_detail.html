@@ -1,0 +1,30 @@
+<!-- templates/projects/project_detail.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ project.title }}</h2>
+<p>{{ project.details }}</p>
+
+<p><strong>Target:</strong> {{ project.total_target }} {{ project.currency }}</p>
+<p><strong>Category:</strong> {{ project.category }}</p>
+<p><strong>Tags:</strong>
+    {% for tag in project.tags.all %}
+        {{ tag }}{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</p>
+
+<p><strong>Start:</strong> {{ project.start_time }} | <strong>End:</strong> {{ project.end_time }}</p>
+
+<h4>Images:</h4>
+{% for pic in project.pictures.all %}
+    <img src="{{ pic.image.url }}" alt="Project Image" style="max-height: 200px;">
+{% empty %}
+    <p>No images uploaded.</p>
+{% endfor %}
+
+{% if user == project.owner %}
+    <a href="{% url 'project_edit' project.pk %}">Edit</a> |
+    <a href="{% url 'project_delete' project.pk %}">Delete</a>
+{% endif %}
+<br><a href="{% url 'project_list' %}">Back to all projects</a>
+{% endblock %}

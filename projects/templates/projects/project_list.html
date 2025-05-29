@@ -1,0 +1,18 @@
+<!-- templates/projects/project_list.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h2>All Projects</h2>
+<a href="{% url 'project_create' %}">+ New Project</a>
+<hr>
+{% for project in projects %}
+    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+        <h3><a href="{% url 'project_detail' project.pk %}">{{ project.title }}</a></h3>
+        <p>{{ project.details|truncatewords:20 }}</p>
+        <p><strong>Target:</strong> {{ project.total_target }} {{ project.currency }}</p>
+        <p><strong>Start:</strong> {{ project.start_time }} | <strong>End:</strong> {{ project.end_time }}</p>
+    </div>
+{% empty %}
+    <p>No projects found.</p>
+{% endfor %}
+{% endblock %}

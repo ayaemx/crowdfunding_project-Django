@@ -1,0 +1,17 @@
+<!-- templates/projects/project_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h2>{% if form.instance.pk %}Edit{% else %}Create{% endif %} Project</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <label>Upload Images:</label>
+    <input type="file" name="images" multiple><br><br>
+    <button type="submit">Save</button>
+</form>
+
+<a href="{% url 'project_list' %}">Cancel</a>
+{% endblock %}
