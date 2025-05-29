@@ -2,7 +2,8 @@ from django.urls import path
 from .views import UserRegisterView, UserProfileEditView , ActivateAccountView , email_login_view , UserDeleteView , UserProfileView
 from django.views.generic import TemplateView
 from django.contrib.auth.views import LoginView
-from .api_views import UserListAPI
+from django.urls import path
+from .api_views import UserListAPI, UserRegistrationAPI, UserProfileAPI
 
 app_name = 'users'
 urlpatterns = [
@@ -14,5 +15,6 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='profile'),
     path('delete/', UserDeleteView.as_view(), name='delete-account'),
     path('api/users/', UserListAPI.as_view(), name='api-user-list'),
-
+    path('api/register/', UserRegistrationAPI.as_view(), name='api-user-register'),
+    path('api/profile/', UserProfileAPI.as_view(), name='api-user-profile'),
 ]

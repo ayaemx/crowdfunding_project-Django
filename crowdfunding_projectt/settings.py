@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'comments.apps.CommentsConfig',
     'reports.apps.ReportsConfig',
     'tags.apps.TagsConfig',
+    'rest_framework',
 ]
 
 AUTH_USER_MODEL = 'users.User'
