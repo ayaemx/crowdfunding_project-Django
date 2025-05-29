@@ -14,3 +14,18 @@ db.sqlite3
 .idea/
 .env
 .venv/
+
+
+
+
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore SQLite database
+db.sqlite3
+
+# Ignore virtual environment folders (optional but recommended)
+venv/
+.env

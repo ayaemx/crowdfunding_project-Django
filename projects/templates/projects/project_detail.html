@@ -1,0 +1,9 @@
+<h1>{{ project.title }}</h1>
+<p>{{ project.details }}</p>
+<p>Category: {{ project.category }}</p>
+<p>Target: {{ project.total_target }} {{ project.currency }}</p>
+<p>Start: {{ project.start_time }}</p>
+<p>End: {{ project.end_time }}</p>
+<a href="{% url 'projects:project-edit' project.pk %}">Edit</a> |
+<a href="{% url 'projects:project-delete' project.pk %}">Delete</a> |
+<a href="{% url 'projects:project-list' %}">Back to list</a>
