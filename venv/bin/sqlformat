@@ -1,4 +1,4 @@
-#!/home/ayooya/crowdfunding_projectt/venv/bin/python3
+#!/home/nada/PycharmProjects/crowdfunding_project-Django/venv/bin/python3.13
 # -*- coding: utf-8 -*-
 import re
 import sys
