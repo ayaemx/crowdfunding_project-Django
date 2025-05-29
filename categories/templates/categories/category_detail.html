@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Category: {{ category.name }}</h2>
+{% if category.description %}<p>{{ category.description }}</p>{% endif %}
+
+<h3>Projects in this category:</h3>
+<ul>
+  {% for project in projects %}
+    <li>
+      <a href="{% url 'projects:project-detail' project.id %}">{{ project.title }}</a>
+    </li>
+  {% empty %}
+    <li>No projects in this category yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
