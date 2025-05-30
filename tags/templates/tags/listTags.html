@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tags</h2>
+<ul>
+  {% for tag in tags %}
+    <li>
+      <!-- Link to view all projects under this tag -->
+      <a href="{% url 'projects_by_tag' tag %}">{{ tag }}</a>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -41,6 +41,12 @@ class UserRegistrationForm(forms.ModelForm):
         validate_password(password1)
         return password1
 
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("A user with that email already exists.")
+        return email
+
     def clean(self):
         cleaned_data = super().clean()
         password1 = cleaned_data.get('password1')
@@ -70,3 +76,15 @@ class UserDeleteForm(forms.Form):
         widget=forms.PasswordInput,
         help_text="Enter your password to confirm account deletion."
     )
+
+# users/views.py or users/forms.py
+def send_activation_email(self, request, user):
+    current_site = get_current_site(request)
+    subject = 'Activate Your Account'
+    message = render_to_string('users/activate_account.html', {
+        'user': user,
+        'domain': current_site.domain,
+        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+        'token': token_generator.make_token(user),
+    })
+    user.email_user(subject, message, html_message=message)

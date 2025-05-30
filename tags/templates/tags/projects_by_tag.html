@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Projects tagged with "{{ tag }}"</h1>
+<ul>
+  {% for project in projects %}
+    <li><a href="#">{{ project.title }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

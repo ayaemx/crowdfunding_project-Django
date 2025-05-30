@@ -1,0 +1,33 @@
+# Python
+*.pyc
+__pycache__/
+
+# Django
+db.sqlite3
+/media/
+/staticfiles/
+/.env
+*.log
+
+# VSCode or PyCharm
+.vscode/
+.idea/
+
+env/
+.venv/
+venv/
+.env
+
+
+
+
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore SQLite database
+db.sqlite3
+
+# Ignore virtual environment folders (optional but recommended)
+

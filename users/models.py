@@ -7,6 +7,6 @@ class User(AbstractUser):
     birthdate = models.DateField(blank=True, null=True)
     facebook_profile = models.URLField(blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
-
+    email = models.EmailField(unique=True)
     def __str__(self):
         return self.username
