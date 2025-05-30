@@ -1,22 +1,17 @@
-from django.urls import reverse_lazy , reverse
+from django.urls import reverse_lazy, reverse
 from django.views.generic.edit import CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .forms import UserRegistrationForm, UserProfileEditForm , EmailLoginForm
+from .forms import UserRegistrationForm, UserProfileEditForm, EmailLoginForm, UserDeleteForm
 from .models import User
 from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from .tokens import account_activation_token
-
 from django.views import View
-from django.shortcuts import render, redirect
-from django.utils.http import urlsafe_base64_decode
-from django.contrib.auth import get_user_model , authenticate, login , logout
+from django.shortcuts import render, redirect, resolve_url
+from django.contrib.auth import get_user_model, authenticate, login, logout
 from django.contrib import messages
-
 from django.views.generic import TemplateView
-
-from .forms import UserDeleteForm
 
 # Registration
 class UserRegisterView(CreateView):
@@ -30,7 +25,7 @@ class UserRegisterView(CreateView):
         user.set_password(form.cleaned_data['password1'])
         user.is_active = False  # For activation step
 
-        # Auto-generate a unique username from emaill
+        # Auto-generate a unique username from email
         email = form.cleaned_data['email']
         base_username = email.split('@')[0]
         username = base_username
@@ -49,11 +44,14 @@ class UserRegisterView(CreateView):
             reverse('users:activate', kwargs={'uidb64': uid, 'token': token})
         )
         subject = 'Activate your account'
-        message = f'Hi {user.first_name},\n\nPlease activate your account by clicking the link below:\n{activation_link}\n\nThis link will expire in 24 hours.'
+        message = (
+            f'Hi {user.first_name},\n\n'
+            f'Please activate your account by clicking the link below:\n{activation_link}\n\n'
+            f'This link will expire in 24 hours.'
+        )
         send_mail(subject, message, None, [user.email])
 
         return super().form_valid(form)
-
 
 # Profile Edit
 class UserProfileEditView(LoginRequiredMixin, UpdateView):
@@ -65,7 +63,7 @@ class UserProfileEditView(LoginRequiredMixin, UpdateView):
     def get_object(self):
         return self.request.user
 
-#Activation View
+# Activation View
 UserModel = get_user_model()
 
 class ActivateAccountView(View):
@@ -80,12 +78,14 @@ class ActivateAccountView(View):
             user.is_active = True
             user.save()
             messages.success(request, "Your account has been activated! You can now log in.")
-            return redirect('users:login')  # You need to create this view next
+            return redirect('users:login')
         else:
             return render(request, 'users/activation_invalid.html')
 
+# Login View (Email-based)
 def email_login_view(request):
     form = EmailLoginForm(request.POST or None)
+    next_url = request.GET.get('next') or request.POST.get('next') or resolve_url('home')
     if request.method == "POST":
         if form.is_valid():
             email = form.cleaned_data['email']
@@ -98,11 +98,11 @@ def email_login_view(request):
                 user = authenticate(request, username=user.username, password=password)
                 if user is not None:
                     login(request, user)
-                    return redirect('users:profile')
+                    return redirect(next_url)
             messages.error(request, "Invalid email or password.")
-    return render(request, "users/login.html", {"form": form})
+    return render(request, "users/login.html", {"form": form, "next": next_url})
 
-
+# Profile View
 class UserProfileView(LoginRequiredMixin, TemplateView):
     template_name = 'users/profile.html'
 
@@ -110,9 +110,10 @@ class UserProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context['user_obj'] = user
-        # Projects and donations will be added later
+        # Projects and donations can be added here later
         return context
 
+# Account Deletion View
 class UserDeleteView(LoginRequiredMixin, View):
     template_name = 'users/delete_account_confirm.html'
 
@@ -129,7 +130,7 @@ class UserDeleteView(LoginRequiredMixin, View):
                 user.delete()
                 logout(request)
                 messages.success(request, "Your account has been deleted.")
-                return redirect('home')  # or your homepage name
+                return redirect('home')
             else:
                 messages.error(request, "Incorrect password. Account not deleted.")
         return render(request, self.template_name, {'form': form})
