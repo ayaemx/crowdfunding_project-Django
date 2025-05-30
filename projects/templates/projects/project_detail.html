@@ -7,3 +7,32 @@
 <a href="{% url 'projects:project-edit' project.pk %}">Edit</a> |
 <a href="{% url 'projects:project-delete' project.pk %}">Delete</a> |
 <a href="{% url 'projects:project-list' %}">Back to list</a>
+
+<h3>Comments</h3>
+
+{% for comment in project.comments.all %}
+  <div style="margin-bottom: 15px; border-left: 3px solid #ccc; padding-left: 10px;">
+    <strong>{{ comment.user }}</strong> - {{ comment.created_at|date:"M d, Y" }}
+    <p>{{ comment.content }}</p>
+
+    <!-- Link to reply -->
+    <a href="{% url 'comments:reply_comment' comment.id %}">Reply</a>
+       <!-- Add Report Button -->
+    <a href="{% url 'comments:report_comment' comment.id %}">Report</a>
+
+
+
+    <!-- Show replies -->
+    {% if comment.replies.exists %}
+      <div style="margin-left: 20px; border-left: 2px solid #eee; padding-left: 10px;">
+        {% for reply in comment.replies.all %}
+          <p><strong>{{ reply.user }}</strong>: {{ reply.content }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% empty %}
+  <p>No comments yet. Be the first to comment!</p>
+{% endfor %}
+
+<a href="{% url 'comments:add_comment' project.id %}" class="btn btn-success">Add a Comment</a>
