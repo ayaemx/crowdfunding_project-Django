@@ -15,6 +15,7 @@ urlpatterns = [
     path('users/', include('users.urls', namespace='users')),
     path('categories/', include('categories.urls', namespace='categories')),
     path('projects/', include('projects.urls', namespace='projects')),
+    path('tags/', include('tags.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

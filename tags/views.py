@@ -12,7 +12,7 @@ def tag_list(request):
     # Works with SQLite
     tag_names = Tag.objects.values_list('name', flat=True).distinct()
 
-    return render(request, 'tags/list.html', {
+    return render(request, 'tags/listTags.html', {
         'tags': tag_names
     })
 def search_by_tag(request):
@@ -28,7 +28,7 @@ def search_by_tag(request):
         # Filter projects whose tags contain the query (case-insensitive)
         projects = Project.objects.filter(tags__name__icontains=query).distinct()
 
-    return render(request, 'tags/search_results.html', {
+    return render(request, 'tags/search_by_tag.html', {
         'projects': projects,
         'query': query
     })
