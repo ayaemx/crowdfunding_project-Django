@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Search Bar -->
+<!--{% include "core/_search_bar.html" %}-->
+<!-- Slider for top 5 rated running projects -->
+<!--{% include "home/_slider.html" with projects=running_projects %}-->
+<!-- Latest 5 Projects -->
+<h2>Latest Projects</h2>
+{% include "home/projects_list.html" with projects=latest_projects %}
+<!-- Latest 5 Featured Projects -->
+<h2>Featured Projects</h2>
+{% include "home/projects_list.html" with projects=featured_projects%}
+<!-- Categories List -->
+<h2>Categories</h2>
+{% include "home/category_list.html" with categories=categories %}
+<!-- Search Results -->
+{% if search_results %}
+<h2>Search Results for "{{ query }}"</h2>
+{% include "home/projects_list.html" with projects=search_results%}
+<h2> Tags   </h2>
+{% include "home/_tag_projects.html" with tags=tags %}
+{% endif %}
+{% endblock %}

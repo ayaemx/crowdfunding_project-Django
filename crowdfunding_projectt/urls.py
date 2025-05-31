@@ -15,6 +15,7 @@ urlpatterns = [
     path('users/', include('users.urls', namespace='users')),
     path('categories/', include('categories.urls', namespace='categories')),
     path('projects/', include('projects.urls', namespace='projects')),
+    path('', include('home.urls')),
     path('tags/', include('tags.urls')),
 ]
 if settings.DEBUG:

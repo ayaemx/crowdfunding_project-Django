@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<ul>
+{% for tags in tags %}
+<li>
+<a href="{% url 'tags:listTags' tags.slug
+%}">{{ tags.name }}</a>
+</li>
+{% endfor %}
+</ul>
+{% endblock %}
+
+
