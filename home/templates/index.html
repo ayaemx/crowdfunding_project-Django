@@ -1,0 +1,43 @@
+<h1>Welcome to Home </h1>
+
+<!-- Slider for highest rated projects -->
+<h2>Highest Rated Projects</h2>
+<div class="slider">
+    {% for project in highest_rated %}
+    <div>
+        <h3>{{ project.title }}</h3>
+        <p>Rating: {{ project.rating }}</p>
+        <p>{{ project.description|truncatewords:20 }}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Latest projects -->
+<h2>Latest Projects</h2>
+<ul>
+    {% for project in latest_projects %}
+    <li>
+        <span>{{ project.created_at|date:"M d, Y" }}</span>
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- Featured projects -->
+<h2>Featured Projects</h2>
+<ul>
+    {% for project in featured_projects %}
+    <li>
+        <span>project</span>
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- Categories list -->
+<h2>Categories</h2>
+<ul>
+    {% for category in categories %}
+    <li>
+        <p>{{ category.description }}</p>
+    </li>
+    {% endfor %}
+</ul>

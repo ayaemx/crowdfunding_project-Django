@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'tags.apps.TagsConfig',
     'home.apps.HomeConfig',
     'rest_framework',
+    'django_extensions',
 ]
 
 AUTH_USER_MODEL = 'users.User'
