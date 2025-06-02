@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'comments.apps.CommentsConfig',
     'reports.apps.ReportsConfig',
     'tags.apps.TagsConfig',
+    'home.apps.HomeConfig',
     'rest_framework',
+    'django_extensions',
 ]
 
 AUTH_USER_MODEL = 'users.User'
