@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Project
 from .forms import ProjectForm
+from comments.models import HiddenComment
 
 def project_list(request):
     projects = Project.objects.all()
@@ -8,7 +9,15 @@ def project_list(request):
 
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    return render(request, 'projects/project_detail.html', {'project': project})
+    comments = project.comments.filter(parent__isnull=True).prefetch_related('replies')
+    hidden_comment_ids = []
+    if request.user.is_authenticated:
+        hidden_comment_ids = list(
+            HiddenComment.objects.filter(user=request.user)
+            .values_list('comment_id', flat=True)
+        )
+    # Only top-level comments
+    return render(request, 'projects/project_detail.html', {'project': project, 'comments':comments, 'hidden_comment_ids': hidden_comment_ids,})
 
 def project_create(request):
     if request.method == 'POST':

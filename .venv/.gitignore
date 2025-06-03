@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+
+# Django
+/media/
+/staticfiles/
+db.sqlite3
+.env
+
+# PyCharm
+.idea/
+.venv/
