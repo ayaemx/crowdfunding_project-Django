@@ -4,6 +4,7 @@ from projects.models import Project
 from .models import Comment
 from .forms import CommentForm, CommentReportForm
 from django.contrib import messages
+from .models import HiddenComment
 # Create your views here.
 
 
@@ -77,3 +78,30 @@ def report_comment(request, comment_id):
         'form': form,
         'comment': comment
 })
+
+@login_required
+def report_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    if request.method == 'POST':
+        form = CommentReportForm(request.POST)
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.user = request.user
+            report.comment = comment
+            report.save()
+
+            # Hide the comment from the reporting user
+            HiddenComment.objects.get_or_create(user=request.user, comment=comment)
+
+            messages.success(request, "You won't see this comment anymore.")
+            return redirect('projects:project-detail', pk=comment.project.id)
+        else:
+            messages.error(request, "Please provide a reason for reporting.")
+    else:
+        form = CommentReportForm()
+
+    return render(request, 'comments/report_comment.html', {
+        'form': form,
+        'comment': comment
+    })
