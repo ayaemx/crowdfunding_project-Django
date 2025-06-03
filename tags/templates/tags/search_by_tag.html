@@ -1,0 +1,16 @@
+<!-- templates/tags/search_results.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Results for "{{ query }}"</h1>
+
+{% if projects %}
+  <ul>
+    {% for project in projects %}
+      <li><a href="{% url 'project_detail' project.id %}">{{ project.title }}</a></li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No matching projects found.</p>
+{% endif %}
+{% endblock %}
