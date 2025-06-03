@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from projects.models import Project
 from .models import Comment
 from .forms import CommentForm, CommentReportForm
+from django.contrib import messages
 # Create your views here.
 
 
@@ -60,11 +61,19 @@ def report_comment(request, comment_id):
             report.user = request.user
             report.comment = comment
             report.save()
+
+            # Show success message
+            messages.success(request, "Thank you for reporting this comment.")
+
+            # Redirect to project detail page
             return redirect('projects:project-detail', pk=comment.project.id)
+        else:
+            # Show error message
+            messages.error(request, "Please enter a reason for reporting.")
     else:
-        form = CommentReportForm()
+     form = CommentReportForm()
 
     return render(request, 'comments/report_comment.html', {
         'form': form,
         'comment': comment
-    })
+})

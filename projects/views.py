@@ -8,7 +8,8 @@ def project_list(request):
 
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    return render(request, 'projects/project_detail.html', {'project': project})
+    comments = project.comments.filter(parent__isnull=True).prefetch_related('replies')  # Only top-level comments
+    return render(request, 'projects/project_detail.html', {'project': project, 'comments':comments,})
 
 def project_create(request):
     if request.method == 'POST':

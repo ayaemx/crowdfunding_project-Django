@@ -10,7 +10,7 @@
 
 <h3>Comments</h3>
 
-{% for comment in project.comments.all %}
+{% for comment in comments %}
   <div style="margin-bottom: 15px; border-left: 3px solid #ccc; padding-left: 10px;">
     <strong>{{ comment.user }}</strong> - {{ comment.created_at|date:"M d, Y" }}
     <p>{{ comment.content }}</p>
