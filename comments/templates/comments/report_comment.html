@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Report Comment{% endblock %}
+{% block content %}
+<h2>Report Inappropriate Comment</h2>
+
+<form method="post">
+  {% csrf_token %} <!-- Must be inside the form -->
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-danger">Submit Report</button>
+</form>
+{% endblock %}
