@@ -21,6 +21,13 @@ def homepage(request):
         'featured_projects': featured_projects,
         'categories': categories,
     }
-    print("menna")
 
     return render(request, 'index.html', context)
+
+def search_projects(request):
+    query = request.GET.get('q', '')
+    results = Project.objects.filter(
+        models.Q(title=query) |
+        models.Q(tags=query)
+    )
+    return render(request, 'index.html', {'results': results, 'query': query})

@@ -1,5 +1,6 @@
 <h1>Welcome to Home </h1>
 
+
 <!-- Slider for highest rated projects -->
 <h2>Highest Rated Projects</h2>
 <div class="slider">
@@ -11,7 +12,12 @@
     </div>
     {% endfor %}
 </div>
-
+<!-- Search bar -->
+<h2>Search Projects</h2>
+<form method="get" action="">
+    <input type="text" name="q" placeholder="Search by title or tag...">
+    <button type="submit">Search</button>
+</form>
 <!-- Latest projects -->
 <h2>Latest Projects</h2>
 <ul>
@@ -27,7 +33,7 @@
 <ul>
     {% for project in featured_projects %}
     <li>
-        <span>project</span>
+         <p>{{ project.details }}</p>
     </li>
     {% endfor %}
 </ul>
