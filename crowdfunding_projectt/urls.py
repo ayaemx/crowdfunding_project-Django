@@ -23,6 +23,8 @@ urlpatterns = [
     path('home/', include('home.urls')),
 
     path('tags/', include('tags.urls')),
+    path('api/comments/', include('comments.api.urls')),
+    path('api/tags/', include('tags.api.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
