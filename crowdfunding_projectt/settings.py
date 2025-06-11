@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'projects.apps.ProjectsConfig',
     'categories.apps.CategoriesConfig',
     'comments.apps.CommentsConfig',
-    'reports.apps.ReportsConfig',
     'tags.apps.TagsConfig',
     'home.apps.HomeConfig',
     'rest_framework',
@@ -154,3 +153,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'aya3mad2002@gmail.com'
 EMAIL_HOST_PASSWORD = 'hoxj qsan wxzb zbog'  # Use Gmail app password
 DEFAULT_FROM_EMAIL = 'aya3mad2002@gmail.com'
+
+
+#for fullStack prep
+REST_FRAMEWORK settings
+CORS configuration for React
