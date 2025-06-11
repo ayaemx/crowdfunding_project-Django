@@ -3,16 +3,29 @@ from .models import User
 from django.contrib.auth.password_validation import validate_password
 import re
 
+
 class UserSerializer(serializers.ModelSerializer):
-    """For listing and viewing user profiles."""
+    """Enhanced user data for API"""
+    full_name = serializers.ReadOnlyField()
+    projects_count = serializers.ReadOnlyField()
+    donations_count = serializers.ReadOnlyField()
+    total_donated = serializers.ReadOnlyField()
+    profile_picture_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
-            'mobile_phone', 'profile_picture', 'birthdate',
-            'facebook_profile', 'country', 'is_active'
+            'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
+            'mobile_phone', 'profile_picture_url', 'birthdate',
+            'facebook_profile', 'country', 'projects_count',
+            'donations_count', 'total_donated', 'date_joined'
         ]
-        read_only_fields = ['id', 'email', 'is_active']
+
+    def get_profile_picture_url(self, obj):
+        if obj.profile_picture:
+            return self.context['request'].build_absolute_uri(obj.profile_picture.url)
+        return None
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """For registering new users via API."""
@@ -55,12 +68,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('password2')
         password = validated_data.pop('password1')
         email = validated_data['email']
+
+        # Auto-generate unique username
         base_username = email.split('@')[0]
         username = base_username
         counter = 1
         while User.objects.filter(username=username).exists():
             username = f"{base_username}{counter}"
             counter += 1
+
         user = User(**validated_data)
         user.username = username
         user.set_password(password)
@@ -68,11 +84,52 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
 class UserProfileEditSerializer(serializers.ModelSerializer):
     """For editing user profile via API (except email)."""
+
     class Meta:
         model = User
         fields = [
             'first_name', 'last_name', 'mobile_phone', 'profile_picture',
             'birthdate', 'facebook_profile', 'country'
         ]
+
+
+class UserLoginSerializer(serializers.Serializer):
+    """For API login"""
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+
+# *** UPDATED: Fixed model references ***
+class UserProjectsSerializer(serializers.ModelSerializer):
+    """For user's projects list"""
+    current_amount = serializers.ReadOnlyField()
+    funding_percentage = serializers.ReadOnlyField()
+    main_picture = serializers.SerializerMethodField()
+
+    class Meta:
+        model = 'projects.Project'  # String reference until projects app is ready
+        fields = [
+            'id', 'title', 'total_target', 'current_amount',
+            'funding_percentage', 'created_at', 'end_time', 'main_picture'
+        ]
+
+    def get_main_picture(self, obj):
+        """Get first project picture"""
+        if hasattr(obj, 'pictures') and obj.pictures.exists():
+            picture = obj.pictures.first()
+            if picture and picture.image:
+                return self.context['request'].build_absolute_uri(picture.image.url)
+        return None
+
+
+class UserDonationsSerializer(serializers.ModelSerializer):
+    """For user's donation history"""
+    project_title = serializers.CharField(source='project.title', read_only=True)
+    project_id = serializers.IntegerField(source='project.id', read_only=True)
+
+    class Meta:
+        model = 'projects.Donation'  # String reference until projects app is ready
+        fields = ['id', 'project_id', 'project_title', 'amount', 'donation_date']

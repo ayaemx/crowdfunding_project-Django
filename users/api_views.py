@@ -1,7 +1,14 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 from .models import User
-from .serializers import UserSerializer, UserRegistrationSerializer, UserProfileEditSerializer
-
+from .serializers import (
+    UserSerializer, UserRegistrationSerializer,
+    UserProfileEditSerializer, UserLoginSerializer,
+    UserProjectsSerializer, UserDonationsSerializer
+)
 class UserListAPI(generics.ListAPIView):
     """List all users (admin only, or restrict as needed)."""
     queryset = User.objects.all()
@@ -21,3 +28,88 @@ class UserProfileAPI(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserLoginAPI(generics.GenericAPIView):
+    """API Login - returns token"""
+    serializer_class = UserLoginSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+
+        try:
+            user = User.objects.get(email=email)
+            user = authenticate(username=user.username, password=password)
+
+            if user and user.is_active:
+                token, created = Token.objects.get_or_create(user=user)
+                return Response({
+                    'token': token.key,
+                    'user': UserSerializer(user).data
+                })
+            else:
+                return Response({
+                    'error': 'Invalid credentials or inactive account'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+        except User.DoesNotExist:
+            return Response({
+                'error': 'Invalid credentials'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout_api(request):
+    """API Logout - delete token"""
+    try:
+        request.user.auth_token.delete()
+        return Response({'message': 'Successfully logged out'})
+    except:
+        return Response({'error': 'Error logging out'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProjectsAPI(generics.ListAPIView):
+    """Get user's created projects"""
+    serializer_class = UserProjectsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.request.user.user_projects
+
+
+class UserDonationsAPI(generics.ListAPIView):
+    """Get user's donation history"""
+    serializer_class = UserDonationsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.request.user.user_donations
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_stats_api(request):
+    """Get user statistics"""
+    user = request.user
+    return Response({
+        'projects_count': user.projects_count,
+        'donations_count': user.donations_count,
+        'total_donated': user.total_donated,
+        'member_since': user.date_joined,
+        'profile_completion': calculate_profile_completion(user)
+    })
+
+
+def calculate_profile_completion(user):
+    """Calculate profile completion percentage"""
+    fields = ['first_name', 'last_name', 'email', 'mobile_phone',
+              'profile_picture', 'birthdate', 'facebook_profile', 'country']
+    completed = sum(1 for field in fields if getattr(user, field))
+    return round((completed / len(fields)) * 100)
