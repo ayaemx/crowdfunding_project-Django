@@ -17,12 +17,13 @@ urlpatterns = [
     path('api/projects/', include('projects.api_urls')),  # Projects API
     # path('api/categories/', include('categories.api_urls')),  # Enable when ready
     # path('api/tags/', include('tags.api_urls')),             # Enable when ready
-    # path('api/comments/', include('comments.api_urls')),     # Enable when ready
+    path('api/comments/', include('comments.api_urls')),     # Enable when ready
 
     # ===== TEMPLATE VIEWS (for testing) =====
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('users/', include('users.urls')),  # Template views only
-    path('projects/', include('projects.urls')),  # Template views only
+    path('projects/', include('projects.urls')),
+    path('comments/', include('comments.urls')),
     # path('home/', include('home.urls')),                # Enable when ready
 ]
 

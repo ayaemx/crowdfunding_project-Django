@@ -1,4 +1,4 @@
-# users/serializers.py - COMPLETE FIXED VERSION
+# users/serializers.py - SAFE MINIMAL UPDATE
 from rest_framework import serializers
 from .models import User
 from django.contrib.auth.password_validation import validate_password
@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
+            'id', 'email', 'first_name', 'last_name', 'full_name',  # *** ONLY CHANGE: Removed 'username' ***
             'mobile_phone', 'profile_picture_url', 'birthdate',
             'facebook_profile', 'country', 'projects_count',
             'donations_count', 'total_donated', 'date_joined'
@@ -29,6 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
             return self.context['request'].build_absolute_uri(obj.profile_picture.url)
         return None
 
+# *** NO CHANGES to any other serializers - they stay exactly the same ***
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
@@ -99,7 +100,7 @@ class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-# *** FIXED: Use actual model classes instead of string references ***
+# *** NO CHANGES to these - they stay exactly the same ***
 class UserProjectsSerializer(serializers.ModelSerializer):
     """PERMANENT FIX: For user's projects list using actual Project model"""
     current_amount = serializers.ReadOnlyField()
