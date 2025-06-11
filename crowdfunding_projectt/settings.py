@@ -114,8 +114,11 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'aya3mad2002@gmail.com'
-EMAIL_HOST_PASSWORD = 'hoxj qsan wxzb devido'  # Gmail app password
+EMAIL_HOST_PASSWORD = 'vmrk qbbe nyme knke '  # Gmail app password
 DEFAULT_FROM_EMAIL = 'aya3mad2002@gmail.com'
+# Add these for better error handling
+EMAIL_TIMEOUT = 60
+EMAIL_USE_SSL = False  # Use TLS instead
 
 # Login/Logout URLs
 LOGIN_REDIRECT_URL = '/'
@@ -132,11 +135,12 @@ USE_TZ = True
 # REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
+       # 'rest_framework.authentication.SessionAuthentication',
+
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+         'rest_framework.permissions.AllowAny',  # *** FOR DEVELOPMENT ***
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -148,12 +152,18 @@ REST_FRAMEWORK = {
 
 # CORS Configuration for React
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://127.0.0.1:3000',  # For React frontend
+    'http://localhost:3000',
+
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# *** ADD: CSRF EXEMPTION FOR API ***
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

@@ -1,8 +1,11 @@
+# users/serializers.py - COMPLETE FIXED VERSION
 from rest_framework import serializers
 from .models import User
 from django.contrib.auth.password_validation import validate_password
 import re
 
+# *** FIXED: Import actual models instead of string references ***
+from projects.models import Project, Donation
 
 class UserSerializer(serializers.ModelSerializer):
     """Enhanced user data for API"""
@@ -26,9 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
             return self.context['request'].build_absolute_uri(obj.profile_picture.url)
         return None
 
-
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """For registering new users via API."""
     password1 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
@@ -84,10 +85,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-
 class UserProfileEditSerializer(serializers.ModelSerializer):
     """For editing user profile via API (except email)."""
-
     class Meta:
         model = User
         fields = [
@@ -95,22 +94,20 @@ class UserProfileEditSerializer(serializers.ModelSerializer):
             'birthdate', 'facebook_profile', 'country'
         ]
 
-
 class UserLoginSerializer(serializers.Serializer):
     """For API login"""
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-
-# *** UPDATED: Fixed model references ***
+# *** FIXED: Use actual model classes instead of string references ***
 class UserProjectsSerializer(serializers.ModelSerializer):
-    """For user's projects list"""
+    """PERMANENT FIX: For user's projects list using actual Project model"""
     current_amount = serializers.ReadOnlyField()
     funding_percentage = serializers.ReadOnlyField()
     main_picture = serializers.SerializerMethodField()
 
     class Meta:
-        model = 'projects.Project'  # String reference until projects app is ready
+        model = Project  # *** FIXED: Direct model reference ***
         fields = [
             'id', 'title', 'total_target', 'current_amount',
             'funding_percentage', 'created_at', 'end_time', 'main_picture'
@@ -124,12 +121,11 @@ class UserProjectsSerializer(serializers.ModelSerializer):
                 return self.context['request'].build_absolute_uri(picture.image.url)
         return None
 
-
 class UserDonationsSerializer(serializers.ModelSerializer):
-    """For user's donation history"""
+    """PERMANENT FIX: For user's donation history using actual Donation model"""
     project_title = serializers.CharField(source='project.title', read_only=True)
     project_id = serializers.IntegerField(source='project.id', read_only=True)
 
     class Meta:
-        model = 'projects.Donation'  # String reference until projects app is ready
+        model = Donation  # *** FIXED: Direct model reference ***
         fields = ['id', 'project_id', 'project_title', 'amount', 'donation_date']
