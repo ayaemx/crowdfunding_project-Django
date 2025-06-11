@@ -54,3 +54,15 @@ class Rating(models.Model):
 
     class Meta:
         unique_together = ('user', 'project')
+# Add calculated properties:
+@property
+def current_amount(self):
+    return self.donations.aggregate(total=models.Sum('amount'))['total'] or 0
+
+@property
+def funding_percentage(self):
+    return (self.current_amount / self.total_target) * 100
+
+@property
+def can_be_cancelled(self):
+    return self.funding_percentage < 25
