@@ -1,8 +1,9 @@
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 class AccountActivationTokenGenerator(PasswordResetTokenGenerator):
-    pass
+    def _make_hash_value(self, user, timestamp):
+        return (
+            str(user.pk) + str(timestamp) + str(user.is_active)
+        )
 
 account_activation_token = AccountActivationTokenGenerator()
-
-#Django’s built-in, time-limited token system.

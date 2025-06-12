@@ -1,0 +1,43 @@
+/* Arabic Calligraphy Enhancements */
+@import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Reem+Kufi:wght@400;500;600;700&display=swap');
+
+.arabic-calligraphy {
+  font-family: 'Scheherazade New', 'Amiri', serif;
+  font-feature-settings: 'liga' on, 'calt' on, 'kern' on;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.arabic-logo {
+  font-family: 'Scheherazade New', serif;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 185, 100, 0.2);
+  letter-spacing: 1px;
+}
+
+.arabic-quote {
+  font-family: 'Scheherazade New', serif;
+  font-weight: 600;
+  line-height: 1.8;
+  text-align: center;
+  direction: rtl;
+}
+
+/* Decorative Islamic patterns */
+.islamic-pattern {
+  font-family: 'Scheherazade New', serif;
+  color: #00B964;
+  opacity: 0.7;
+}
+
+/* RTL Support */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.ltr {
+  direction: ltr;
+  text-align: left;
+}

@@ -118,12 +118,14 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'aya3mad2002@gmail.com'
-EMAIL_HOST_PASSWORD = 'vmrk qbbe nyme knke'  # Gmail app password
+EMAIL_HOST_PASSWORD = 'ytdv ausw sobd udvr'  # Gmail app password
 DEFAULT_FROM_EMAIL = 'aya3mad2002@gmail.com'
-
+DEFAULT_FROM_EMAIL = ' Crowdfunding <aya3mad2002@gmail.com>'
 # Add these for better error handling
-EMAIL_TIMEOUT = 60
-EMAIL_USE_SSL = False  # Use TLS instead
+
+# Add these additional settings
+EMAIL_USE_SSL = False  # Don't use SSL with TLS
+EMAIL_TIMEOUT = 30     # Increase timeout
 
 # Login/Logout URLs
 LOGIN_REDIRECT_URL = '/'
@@ -159,13 +161,13 @@ REST_FRAMEWORK = {
     ],
 }
 
-# *** CORS CONFIGURATION FOR REACT - ENHANCED BUT SAFE ***
+# CORS Configuration for React frontend
 CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'http://127.0.0.1:3000',  # React development server
-    'http://localhost:3000',  # React development server (alternative)
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True  # Only for development
 
 CORS_ALLOW_CREDENTIALS = True
 

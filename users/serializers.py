@@ -1,77 +1,73 @@
-# users/serializers.py - SAFE MINIMAL UPDATE
 from rest_framework import serializers
-from .models import User
+from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from .models import User
 import re
 
-# *** FIXED: Import actual models instead of string references ***
-from projects.models import Project, Donation
 
 class UserSerializer(serializers.ModelSerializer):
-    """Enhanced user data for API"""
-    full_name = serializers.ReadOnlyField()
-    projects_count = serializers.ReadOnlyField()
-    donations_count = serializers.ReadOnlyField()
-    total_donated = serializers.ReadOnlyField()
-    profile_picture_url = serializers.SerializerMethodField()
+    """Serializer for user profile data"""
 
     class Meta:
         model = User
-        fields = [
-            'id', 'email', 'first_name', 'last_name', 'full_name',  # *** ONLY CHANGE: Removed 'username' ***
-            'mobile_phone', 'profile_picture_url', 'birthdate',
-            'facebook_profile', 'country', 'projects_count',
-            'donations_count', 'total_donated', 'date_joined'
-        ]
+        fields = ['id', 'first_name', 'last_name', 'email', 'mobile_phone',
+                  'profile_picture', 'birthdate', 'facebook_profile', 'country',
+                  'date_joined', 'is_active']
+        read_only_fields = ['id', 'date_joined', 'email']
 
-    def get_profile_picture_url(self, obj):
-        if obj.profile_picture:
-            return self.context['request'].build_absolute_uri(obj.profile_picture.url)
-        return None
 
-# *** NO CHANGES to any other serializers - they stay exactly the same ***
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password1 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    """Enhanced registration serializer matching React form fields"""
+    password1 = serializers.CharField(write_only=True, min_length=8)
+    password2 = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = [
-            'first_name', 'last_name', 'email', 'mobile_phone',
-            'profile_picture', 'password1', 'password2'
-        ]
+        fields = ['first_name', 'last_name', 'email', 'mobile_phone',
+                  'password1', 'password2', 'profile_picture']
         extra_kwargs = {
-            'first_name': {'required': True},
-            'last_name': {'required': True},
-            'email': {'required': True},
-            'mobile_phone': {'required': True},
+            'profile_picture': {'required': False}
         }
 
     def validate_mobile_phone(self, value):
+        """Validate Egyptian phone number format"""
         if not re.match(r'^01[0125][0-9]{8}$', value):
-            raise serializers.ValidationError("Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX).")
+            raise serializers.ValidationError(
+                "Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX)."
+            )
         return value
 
     def validate_email(self, value):
+        """Check if email already exists"""
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("A user with this email already exists.")
         return value
 
-    def validate_password1(self, value):
-        validate_password(value)
-        return value
+    def validate(self, attrs):
+        """Validate password confirmation"""
+        if attrs['password1'] != attrs['password2']:
+            raise serializers.ValidationError({
+                'password2': "Passwords do not match."
+            })
 
-    def validate(self, data):
-        if data['password1'] != data['password2']:
-            raise serializers.ValidationError("Passwords do not match.")
-        return data
+        # Validate password strength
+        try:
+            validate_password(attrs['password1'])
+        except Exception as e:
+            raise serializers.ValidationError({
+                'password1': list(e.messages)
+            })
+
+        return attrs
 
     def create(self, validated_data):
+        """Create user with proper password handling"""
+        # Remove password2 as it's not needed for user creation
         validated_data.pop('password2')
         password = validated_data.pop('password1')
-        email = validated_data['email']
 
-        # Auto-generate unique username
+        # Auto-generate username from email
+        email = validated_data['email']
         base_username = email.split('@')[0]
         username = base_username
         counter = 1
@@ -79,54 +75,63 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             username = f"{base_username}{counter}"
             counter += 1
 
-        user = User(**validated_data)
-        user.username = username
-        user.set_password(password)
-        user.is_active = False  # For activation
-        user.save()
+        # Create inactive user (requires email activation)
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            is_active=False,  # Require email activation
+            **validated_data
+        )
+
         return user
 
-class UserProfileEditSerializer(serializers.ModelSerializer):
-    """For editing user profile via API (except email)."""
-    class Meta:
-        model = User
-        fields = [
-            'first_name', 'last_name', 'mobile_phone', 'profile_picture',
-            'birthdate', 'facebook_profile', 'country'
-        ]
 
 class UserLoginSerializer(serializers.Serializer):
-    """For API login"""
+    """Login serializer for email-based authentication"""
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField()
 
-# *** NO CHANGES to these - they stay exactly the same ***
-class UserProjectsSerializer(serializers.ModelSerializer):
-    """PERMANENT FIX: For user's projects list using actual Project model"""
-    current_amount = serializers.ReadOnlyField()
-    funding_percentage = serializers.ReadOnlyField()
-    main_picture = serializers.SerializerMethodField()
+
+class UserProfileEditSerializer(serializers.ModelSerializer):
+    """Serializer for profile editing (excluding email)"""
 
     class Meta:
-        model = Project  # *** FIXED: Direct model reference ***
-        fields = [
-            'id', 'title', 'total_target', 'current_amount',
-            'funding_percentage', 'created_at', 'end_time', 'main_picture'
-        ]
+        model = User
+        fields = ['first_name', 'last_name', 'mobile_phone', 'profile_picture',
+                  'birthdate', 'facebook_profile', 'country']
 
-    def get_main_picture(self, obj):
-        """Get first project picture"""
-        if hasattr(obj, 'pictures') and obj.pictures.exists():
-            picture = obj.pictures.first()
-            if picture and picture.image:
-                return self.context['request'].build_absolute_uri(picture.image.url)
-        return None
+    def validate_mobile_phone(self, value):
+        """Validate Egyptian phone number format"""
+        if value and not re.match(r'^01[0125][0-9]{8}$', value):
+            raise serializers.ValidationError(
+                "Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX)."
+            )
+        return value
 
-class UserDonationsSerializer(serializers.ModelSerializer):
-    """PERMANENT FIX: For user's donation history using actual Donation model"""
-    project_title = serializers.CharField(source='project.title', read_only=True)
-    project_id = serializers.IntegerField(source='project.id', read_only=True)
+    def validate_facebook_profile(self, value):
+        """Validate Facebook profile URL"""
+        if value and value.strip():
+            if not (value.startswith('http://') or value.startswith('https://')):
+                return f"https://{value}"
+        return value
 
-    class Meta:
-        model = Donation  # *** FIXED: Direct model reference ***
-        fields = ['id', 'project_id', 'project_title', 'amount', 'donation_date']
+
+# FIXED: Move these serializers to avoid circular imports
+class UserProjectsSerializer(serializers.Serializer):
+    """Serializer for user's projects - using Serializer to avoid circular import"""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    details = serializers.CharField()
+    total_target = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_donations = serializers.DecimalField(max_digits=10, decimal_places=2)
+    created_at = serializers.DateTimeField()
+    end_time = serializers.DateTimeField()
+    is_featured = serializers.BooleanField()
+
+
+class UserDonationsSerializer(serializers.Serializer):
+    """Serializer for user's donations - using Serializer to avoid circular import"""
+    id = serializers.IntegerField()
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    donation_date = serializers.DateTimeField()
+    project_title = serializers.CharField()
