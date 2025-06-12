@@ -35,12 +35,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Your apps
     'users.apps.UsersConfig',
     'projects.apps.ProjectsConfig',
     'categories.apps.CategoriesConfig',
     'comments.apps.CommentsConfig',
     'tags.apps.TagsConfig',
     'home.apps.HomeConfig',
+
+    # Third-party apps
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
@@ -51,7 +55,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # *** MOVED TO TOP ***
+    'corsheaders.middleware.CorsMiddleware',  # *** KEEP AT TOP FOR CORS ***
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -108,14 +112,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Email Configuration (Gmail SMTP)
+# Email Configuration (Gmail SMTP) - KEEP YOUR WORKING CONFIG
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'aya3mad2002@gmail.com'
-EMAIL_HOST_PASSWORD = 'vmrk qbbe nyme knke '  # Gmail app password
+EMAIL_HOST_PASSWORD = 'vmrk qbbe nyme knke'  # Gmail app password
 DEFAULT_FROM_EMAIL = 'aya3mad2002@gmail.com'
+
 # Add these for better error handling
 EMAIL_TIMEOUT = 60
 EMAIL_USE_SSL = False  # Use TLS instead
@@ -132,38 +137,68 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# REST Framework Configuration
+# *** REST FRAMEWORK CONFIGURATION - KEEP YOUR WORKING SETUP ***
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-       # 'rest_framework.authentication.SessionAuthentication',
-
+        # 'rest_framework.authentication.SessionAuthentication',  # Keep commented for API-only
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-         'rest_framework.permissions.AllowAny',  # *** FOR DEVELOPMENT ***
+        'rest_framework.permissions.AllowAny',  # *** KEEP THIS - IT'S WORKING ***
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
+    # *** SAFE ADDITIONS - Won't break existing functionality ***
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
 }
 
-# CORS Configuration for React
+# *** CORS CONFIGURATION FOR REACT - ENHANCED BUT SAFE ***
 CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://127.0.0.1:3000',  # For React frontend
-    'http://localhost:3000',
-
+    'http://127.0.0.1:3000',  # React development server
+    'http://localhost:3000',  # React development server (alternative)
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-# *** ADD: CSRF EXEMPTION FOR API ***
-CSRF_COOKIE_SECURE = False
+# *** SAFE CORS HEADERS - Enhanced for React ***
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# *** SAFE CORS METHODS - Standard HTTP methods ***
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# *** CSRF CONFIGURATION - Safe for API development ***
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
 CSRF_COOKIE_HTTPONLY = False
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -171,7 +206,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Media files (User uploads)
+# Media files (User uploads) - KEEP YOUR WORKING CONFIG
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
