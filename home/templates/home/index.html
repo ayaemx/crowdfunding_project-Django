@@ -1,0 +1,82 @@
+<!-- home/templates/home/index.html - SIMPLE TEST VERSION -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home Test Page</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f0f8ff; }
+        .section { border: 1px solid #ddd; padding: 15px; margin: 15px 0; background: white; }
+        .debug { background: #ffe8e8; padding: 10px; }
+        .nav { background: #e8f4e8; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <h1>🏠 Home Page Test</h1>
+        <a href="{% url 'categories:category_list' %}">Categories</a> |
+        <a href="{% url 'home:search' %}">Search</a>
+    </div>
+
+    <div class="debug">
+        <strong>Debug Info:</strong><br>
+        Template loaded: ✅<br>
+        Total projects: {{ total_projects }}<br>
+        Total categories: {{ total_categories }}<br>
+        {% if error %}❌ Error: {{ error }}{% endif %}
+    </div>
+
+    <!-- Latest Projects Section -->
+    <div class="section">
+        <h2>📰 Latest Projects ({{ latest_projects.count }})</h2>
+        {% if latest_projects %}
+            {% for project in latest_projects %}
+            <div style="border-left: 3px solid #007cba; padding-left: 10px; margin: 10px 0;">
+                <h4>{{ project.title }}</h4>
+                <p>{{ project.details|truncatewords:20 }}</p>
+                <small>Created: {{ project.created_at|date:"M d, Y" }}</small>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No projects available yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Categories Section -->
+    <div class="section">
+        <h2>📂 Categories ({{ categories.count }})</h2>
+        {% if categories %}
+            {% for category in categories %}
+            <div style="display: inline-block; border: 1px solid #ccc; padding: 8px; margin: 5px; background: #f9f9f9;">
+                <strong>{{ category.name }}</strong><br>
+                <small>{{ category.projects_count|default:0 }} projects</small><br>
+                <a href="{% url 'categories:category_detail' category.slug %}">View →</a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No categories available yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Top Rated Projects Section -->
+    {% if top_rated_projects %}
+    <div class="section">
+        <h2>⭐ Top Rated Projects ({{ top_rated_projects.count }})</h2>
+        {% for project in top_rated_projects %}
+        <div style="border-left: 3px solid #ffd700; padding-left: 10px; margin: 10px 0;">
+            <h4>{{ project.title }}</h4>
+            <p>Rating: {{ project.avg_rating|floatformat:1 }}/5</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Search Section -->
+    <div class="section">
+        <h2>🔍 Search Projects</h2>
+        <form action="{% url 'home:search' %}" method="GET">
+            <input type="text" name="q" placeholder="Search by title or tag..." style="padding: 8px; width: 300px;">
+            <button type="submit" style="padding: 8px 15px;">Search</button>
+        </form>
+    </div>
+</body>
+</html>

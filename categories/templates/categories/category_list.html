@@ -1,12 +1,46 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Categories</h2>
-<ul>
-  {% for category in categories %}
-    <li>
-      <a href="{% url 'categories:category-detail' category.slug %}">{{ category.name }}</a>
-      {% if category.description %}<br><small>{{ category.description }}</small>{% endif %}
-    </li>
-  {% endfor %}
-</ul>
-{% endblock %}
+<!-- categories/templates/categories/category_list.html - SIMPLE TEST VERSION -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Categories Debug Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+        .category { border: 1px solid #ddd; padding: 15px; margin: 10px 0; background: white; }
+        .debug { background: #e8f4fd; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Categories Test Page</h1>
+
+    <div class="debug">
+        <strong>Debug Info:</strong><br>
+        Template loaded: ✅<br>
+        Categories object: {{ categories }}<br>
+        Categories count: {{ categories.count }}<br>
+    </div>
+
+    {% if categories %}
+        <h2>Found {{ categories.count }} Categories:</h2>
+        {% for category in categories %}
+        <div class="category">
+            <h3>{{ category.name }}</h3>
+            <p><strong>Description:</strong> {{ category.description|default:"No description" }}</p>
+            <p><strong>Slug:</strong> {{ category.slug }}</p>
+            <p><strong>Projects:</strong> {{ category.projects_count|default:0 }}</p>
+            <hr>
+            <a href="{% url 'categories:category_detail' category.slug %}">View Projects →</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="category">
+            <h3>❌ No Categories Found</h3>
+            <p>Categories list is empty or not passed to template</p>
+        </div>
+    {% endif %}
+
+    <div class="debug">
+        <strong>Navigation:</strong><br>
+        <a href="{% url 'home:home' %}">← Back to Home</a>
+    </div>
+</body>
+</html>

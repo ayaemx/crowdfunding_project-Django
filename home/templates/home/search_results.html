@@ -1,0 +1,101 @@
+<!-- home/templates/home/search_results.html - COMPLETE SEARCH PAGE -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if query %}Search Results for "{{ query }}"{% else %}Search Projects{% endif %}</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+        .nav { background: #007cba; color: white; padding: 15px; margin-bottom: 20px; }
+        .nav a { color: white; text-decoration: none; margin-right: 15px; }
+        .search-section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        .project { border: 1px solid #ddd; padding: 15px; margin: 10px 0; background: white; border-radius: 5px; }
+        .debug { background: #e8f4fd; padding: 10px; margin: 10px 0; }
+        .no-results { text-align: center; padding: 40px; background: white; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="nav">
+        <h2>🔍 Search Projects</h2>
+        <a href="{% url 'home:home' %}">🏠 Home</a>
+        <a href="{% url 'categories:category_list' %}">📂 Categories</a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-section">
+        <h3>Search Projects by Title or Tag</h3>
+        <form action="{% url 'home:search' %}" method="GET">
+            <input type="text"
+                   name="q"
+                   placeholder="Enter project title or tag..."
+                   value="{{ query }}"
+                   style="padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px;">
+            <button type="submit" style="padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                🔍 Search
+            </button>
+        </form>
+
+        {% if search_performed %}
+        <div class="debug">
+            <strong>Search Info:</strong><br>
+            Query: "{{ query }}"<br>
+            Results found: {{ results_count }}<br>
+            Search performed: ✅
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Search Results -->
+    {% if search_performed %}
+        {% if projects %}
+            <div>
+                <h3>📋 Found {{ results_count }} project{{ results_count|pluralize }}:</h3>
+                {% for project in projects %}
+                <div class="project">
+                    <h4>{{ project.title }}</h4>
+                    <p><strong>Description:</strong> {{ project.details|truncatewords:20 }}</p>
+                    <p><strong>Category:</strong> {{ project.category.name|default:"No category" }}</p>
+                    <p><strong>Target:</strong> {{ project.total_target }} {{ project.currency }}</p>
+                    <p><strong>Progress:</strong> {{ project.funding_percentage|floatformat:1 }}% funded</p>
+                    <p><strong>Created:</strong> {{ project.created_at|date:"M d, Y" }}</p>
+
+                    <!-- Show tags if any -->
+                    {% if project.tags.all %}
+                    <p><strong>Tags:</strong>
+                        {% for tag in project.tags.all %}
+                            <span style="background: #e8f4fd; padding: 2px 6px; border-radius: 3px; margin-right: 5px;">{{ tag.name }}</span>
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+
+                    <hr>
+                    <a href="{% url 'projects:project-detail' project.id %}" style="color: #007cba;">View Project →</a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-results">
+                <h3>❌ No Results Found</h3>
+                <p>No projects found matching "{{ query }}"</p>
+                <p>Try different keywords or browse our categories.</p>
+                <a href="{% url 'categories:category_list' %}" style="color: #007cba;">Browse Categories →</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="no-results">
+            <h3>🔍 Search for Projects</h3>
+            <p>Enter a project title or tag in the search box above to find projects.</p>
+            <p><strong>Example searches:</strong> "healthcare", "education", "gaza", "emergency"</p>
+        </div>
+    {% endif %}
+
+    <!-- Sample searches for testing -->
+    <div class="search-section">
+        <h4>Quick Test Searches:</h4>
+        <a href="{% url 'home:search' %}?q=gaza" style="background: #f0f0f0; padding: 5px 10px; margin: 5px; display: inline-block; border-radius: 3px; text-decoration: none;">Search "gaza"</a>
+        <a href="{% url 'home:search' %}?q=healthcare" style="background: #f0f0f0; padding: 5px 10px; margin: 5px; display: inline-block; border-radius: 3px; text-decoration: none;">Search "healthcare"</a>
+        <a href="{% url 'home:search' %}?q=emergency" style="background: #f0f0f0; padding: 5px 10px; margin: 5px; display: inline-block; border-radius: 3px; text-decoration: none;">Search "emergency"</a>
+        <a href="{% url 'home:search' %}?q=project" style="background: #f0f0f0; padding: 5px 10px; margin: 5px; display: inline-block; border-radius: 3px; text-decoration: none;">Search "project"</a>
+    </div>
+</body>
+</html>

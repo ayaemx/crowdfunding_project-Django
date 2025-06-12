@@ -3,22 +3,27 @@ from .models import Project
 from .forms import ProjectForm
 from comments.models import HiddenComment
 
+
 def project_list(request):
-    projects = Project.objects.all()
-    return render(request, 'projects/project_list.html', {'projects': projects})
+    """List all projects"""
+    projects = Project.objects.filter(is_active=True).order_by('-created_at')
+
+    context = {
+        'projects': projects,
+    }
+
+    return render(request, 'projects/project_list.html', context)
+
 
 def project_detail(request, pk):
+    """Show project details"""
     project = get_object_or_404(Project, pk=pk)
-    comments = project.comments.filter(parent__isnull=True).prefetch_related('replies')
-    hidden_comment_ids = []
-    if request.user.is_authenticated:
-        hidden_comment_ids = list(
-            HiddenComment.objects.filter(user=request.user)
-            .values_list('comment_id', flat=True)
-        )
-    # Only top-level comments
-    return render(request, 'projects/project_detail.html', {'project': project, 'comments':comments, 'hidden_comment_ids': hidden_comment_ids,})
 
+    context = {
+        'project': project,
+    }
+
+    return render(request, 'projects/project_detail.html', context)
 def project_create(request):
     if request.method == 'POST':
         form = ProjectForm(request.POST, request.FILES)

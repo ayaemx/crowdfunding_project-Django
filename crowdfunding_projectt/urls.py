@@ -15,16 +15,20 @@ urlpatterns = [
     # ===== API ENDPOINTS (for React frontend) =====
     path('api/auth/', include('users.api_urls')),  # *** FIXED: Separate API URLs ***
     path('api/projects/', include('projects.api_urls')),  # Projects API
-    # path('api/categories/', include('categories.api_urls')),  # Enable when ready
-    # path('api/tags/', include('tags.api_urls')),             # Enable when ready
-    path('api/comments/', include('comments.api_urls')),     # Enable when ready
+    path('api/categories/', include('categories.api_urls')),  # Enable when ready
+    path('api/tags/', include('tags.api_urls')),             # Enable when ready
+    path('api/comments/', include('comments.api_urls')),
+    path('api/home/', include('home.api_urls')),# Enable when ready
 
     # ===== TEMPLATE VIEWS (for testing) =====
+    path('', include('home.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('users/', include('users.urls')),  # Template views only
     path('projects/', include('projects.urls')),
     path('comments/', include('comments.urls')),
-    # path('home/', include('home.urls')),                # Enable when ready
+    path('tags/', include('tags.urls')),
+    path('categories/', include('categories.urls')),
+                  # Enable when ready
 ]
 
 # Serve media files in development

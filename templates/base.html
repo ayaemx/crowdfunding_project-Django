@@ -1,24 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{% block title %}Crowdfunding{% endblock %}</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
-</head>
-<body>
-    {% if messages %}
-      <ul>
-        {% for message in messages %}
-          <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-    <nav>
-      <a href="{% url 'home' %}">Home</a>
-      <!-- Add more navigation as needed -->
-    </nav>
-    <div>
-        {% block content %}{% endblock %}
+<!-- templates/base.html - FIX LINE 37 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'home:home' %}">
+            <i class="fas fa-heart"></i> CrowdFunding
+        </a>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home:home' %}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'projects:project-list' %}">Projects</a>
+                </li>
+                <li class="nav-item">
+                    <!-- FIX: Change from 'category-list' to 'category_list' -->
+                    <a class="nav-link" href="{% url 'categories:category_list' %}">Categories</a>
+                </li>
+            </ul>
+        </div>
     </div>
-</body>
-</html>
+</nav>

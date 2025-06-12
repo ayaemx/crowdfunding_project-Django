@@ -1,16 +1,99 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Category: {{ category.name }}</h2>
-{% if category.description %}<p>{{ category.description }}</p>{% endif %}
+<!-- categories/templates/categories/category_detail.html -->
+{% extends 'base.html' %}
 
-<h3>Projects in this category:</h3>
-<ul>
-  {% for project in projects %}
-    <li>
-      <a href="{% url 'projects:project-detail' project.id %}">{{ project.title }}</a>
-    </li>
-  {% empty %}
-    <li>No projects in this category yet.</li>
-  {% endfor %}
-</ul>
+{% block title %}{{ category.name }} Projects - CrowdFunding{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Category Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home:home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'categories:category_list' %}">Categories</a></li>
+                    <li class="breadcrumb-item active">{{ category.name }}</li>
+                </ol>
+            </nav>
+            
+            <h1>{{ category.name }} Projects</h1>
+            <p class="text-muted">{{ category.description }}</p>
+            
+            {% if projects %}
+                <p class="text-info">
+                    <i class="fas fa-project-diagram"></i> 
+                    {{ projects.count }} project{{ projects.count|pluralize }} found
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    {% if projects %}
+        <div class="row">
+            {% for project in projects %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card project-card h-100 shadow-sm">
+                    {% if project.main_picture %}
+                    <img src="{{ project.main_picture.url }}" 
+                         class="card-img-top" 
+                         alt="{{ project.title }}" 
+                         style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <i class="fas fa-image fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h6 class="card-title">{{ project.title|truncatechars:50 }}</h6>
+                        <p class="card-text text-muted small">{{ project.details|truncatewords:15 }}</p>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar" 
+                                 style="width: {{ project.funding_percentage }}%"></div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">{{ project.funding_percentage|floatformat:1 }}% funded</small>
+                            <small class="text-success">${{ project.current_amount|floatformat:0 }} raised</small>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <a href="{% url 'projects:project-detail' project.id %}" 
+                           class="btn btn-primary btn-sm">
+                            View Project
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- No Projects in Category -->
+        <div class="text-center py-5">
+            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+            <h3>No Projects Yet</h3>
+            <p class="text-muted">This category doesn't have any projects yet.</p>
+            <div class="mt-4">
+                <a href="{% url 'categories:category_list' %}" class="btn btn-secondary me-3">
+                    Browse Other Categories
+                </a>
+                <a href="{% url 'projects:project-create' %}" class="btn btn-primary">
+                    Start a Project
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.project-card:hover {
+    transform: translateY(-3px);
+    transition: all 0.3s ease;
+}
+</style>
 {% endblock %}

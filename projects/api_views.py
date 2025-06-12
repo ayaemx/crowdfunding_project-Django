@@ -1,10 +1,11 @@
+# projects/api_views.py - COMPLETE FIXED VERSION
 from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes  # *** FIXED: Added missing imports ***
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q, Avg
 from django.db import models
-from django.utils import timezone  # *** ADD THIS IMPORT ***
+from django.utils import timezone
 from .models import Project, Donation, Rating, ProjectReport, ProjectPicture
 from .serializers import (
     ProjectListSerializer, ProjectDetailSerializer,
@@ -17,11 +18,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
     """Complete project API with all crowdfunding functionality"""
     queryset = Project.objects.all().select_related('category', 'owner').prefetch_related(
         'tags', 'pictures', 'donations', 'ratings'
-    )  # *** FIXED: Added missing closing parenthesis ***
-
+    )
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    # *** FIXED: Added JSONParser for handling JSON requests ***
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_serializer_class(self):
@@ -60,7 +58,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """Set project owner to current user"""
         serializer.save(owner=self.request.user)
 
-    # *** NEW: Homepage data endpoint (PDF requirement) ***
     @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def homepage_data(self, request):
         """Get data for homepage - top rated, latest, featured projects"""
@@ -91,7 +88,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Donation endpoint (PDF requirement) ***
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def donate(self, request, pk=None):
         """Donate to a project"""
@@ -125,7 +121,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Rating endpoint (PDF requirement) ***
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def rate(self, request, pk=None):
         """Rate a project (1-5 stars)"""
@@ -153,7 +148,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 serializer.save(user=request.user, project=project)
 
                 # Return updated project data with new average rating
-                project_serializer = ProjectDetailSerializer(project, context={'request': request})
                 return Response({
                     'rating': serializer.data,
                     'project_average_rating': project.average_rating,
@@ -168,7 +162,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Project reporting endpoint (PDF requirement) ***
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def report(self, request, pk=None):
         """Report inappropriate project"""
@@ -207,7 +200,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Multiple image upload endpoint ***
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated],
             parser_classes=[MultiPartParser, FormParser])
     def upload_images(self, request, pk=None):
@@ -265,7 +257,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Project cancellation endpoint (PDF requirement) ***
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def cancel(self, request, pk=None):
         """Cancel project if <25% funded (PDF requirement)"""
@@ -302,27 +293,38 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Get similar projects endpoint ***
     @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
     def similar(self, request, pk=None):
         """Get similar projects based on tags (PDF requirement)"""
         try:
             project = self.get_object()
-            similar_projects = project.similar_projects
+
+            if not project.tags.exists():
+                return Response({
+                    'similar_projects': [],
+                    'count': 0,
+                    'message': 'No tags found for this project'
+                })
+
+            # Get projects that share tags with current project
+            similar_projects = Project.objects.filter(
+                tags__in=project.tags.all(),
+                is_active=True
+            ).exclude(id=project.id).distinct()[:4]  # PDF requires 4 similar projects
 
             serializer = ProjectListSerializer(similar_projects, many=True, context={'request': request})
             return Response({
                 'similar_projects': serializer.data,
-                'count': similar_projects.count()
+                'count': similar_projects.count(),
+                'project_tags': [tag.name for tag in project.tags.all()]
             })
 
         except Exception as e:
-            return Response(
-                {'error': f'Failed to fetch similar projects: {str(e)}'},
+            return Response({
+                'error': f'Failed to fetch similar projects: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # *** NEW: Get project statistics ***
     @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
     def stats(self, request, pk=None):
         """Get project statistics"""
