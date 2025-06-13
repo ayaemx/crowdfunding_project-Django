@@ -55,7 +55,14 @@ export const authAPI = {
 // Rest of your API endpoints remain the same...
 export const projectsAPI = {
   getAll: (params) => api.get('/projects/', { params }),
-  create: (projectData) => api.post('/projects/', projectData),
+  create: (projectData) => {
+    // For FormData, let browser set Content-Type with boundary
+    return api.post('/projects/', projectData, {
+      headers: {
+        // Don't set Content-Type for FormData
+      }
+    });
+  },
   getDetail: (id) => api.get(`/projects/${id}/`),
   update: (id, data) => api.put(`/projects/${id}/`, data),
   delete: (id) => api.delete(`/projects/${id}/`),
@@ -66,11 +73,19 @@ export const projectsAPI = {
   search: (query) => api.get(`/projects/?search=${query}`),
 };
 
+
 export const categoriesAPI = {
-  getAll: () => api.get('/categories/'),
+  getAll: () => api.get('/categories/').then(response => {
+    // Handle paginated response - extract results array
+    if (response.data && response.data.results) {
+      return { ...response, data: response.data.results };
+    }
+    return response;
+  }),
   getWithProjects: () => api.get('/categories/with-projects/'),
   getProjects: (slug) => api.get(`/categories/${slug}/projects/`),
 };
+
 
 export const tagsAPI = {
   getAll: () => api.get('/tags/'),

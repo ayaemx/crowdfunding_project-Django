@@ -54,9 +54,77 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return queryset.filter(is_active=True).order_by('-created_at')
 
+    def create(self, request, *args, **kwargs):
+        """Enhanced project creation with images and tags handling"""
+        try:
+            # Extract basic project data
+            project_data = {
+                'title': request.data.get('title'),
+                'details': request.data.get('details'),
+                'category': request.data.get('category'),
+                'total_target': request.data.get('total_target'),
+                'start_time': request.data.get('start_time'),
+                'end_time': request.data.get('end_time'),
+                'is_featured': request.data.get('is_featured', False)
+            }
+
+            # Create project first
+            serializer = ProjectCreateUpdateSerializer(data=project_data, context={'request': request})
+            if serializer.is_valid():
+                project = serializer.save(owner=request.user)
+
+                # Handle tags - extract from tags[0], tags[1], etc.
+                tags_data = []
+                for key in request.data.keys():
+                    if key.startswith('tags[') and key.endswith(']'):
+                        tags_data.append(request.data[key])
+
+                # Create or get tags and add to project
+                from tags.models import Tag
+                for tag_name in tags_data:
+                    tag, created = Tag.objects.get_or_create(name=tag_name.strip())
+                    project.tags.add(tag)
+
+                # Handle images - extract from image_0, image_1, etc.
+                images = []
+                for key in request.FILES.keys():
+                    if key.startswith('image_'):
+                        images.append(request.FILES[key])
+
+                # Validate minimum 3 images as per PDF requirements
+                if len(images) < 3:
+                    project.delete()  # Clean up created project
+                    return Response(
+                        {'images': ['Minimum 3 images required (1 main + 2 additional)']},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Create project pictures
+                for index, image in enumerate(images):
+                    picture = ProjectPicture.objects.create(
+                        image=image,
+                        is_main=(index == 0),  # First image is main
+                        order=index
+                    )
+                    project.pictures.add(picture)
+
+                # Return created project with full details
+                response_serializer = ProjectDetailSerializer(project, context={'request': request})
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response(
+                {'error': f'Project creation failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     def perform_create(self, serializer):
         """Set project owner to current user"""
         serializer.save(owner=self.request.user)
+
+
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def homepage_data(self, request):
@@ -322,6 +390,64 @@ class ProjectViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({
                 'error': f'Failed to fetch similar projects: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def create(self, request, *args, **kwargs):
+        """Create project with images and tags"""
+        try:
+            # Extract and validate basic project data
+            project_data = {
+                'title': request.data.get('title'),
+                'details': request.data.get('details'),
+                'category': request.data.get('category'),
+                'total_target': request.data.get('total_target'),
+                'start_time': request.data.get('start_time'),
+                'end_time': request.data.get('end_time'),
+                'is_featured': request.data.get('is_featured', False)
+            }
+
+            # Create project first
+            serializer = ProjectCreateUpdateSerializer(data=project_data, context={'request': request})
+            if serializer.is_valid():
+                project = serializer.save(owner=request.user)
+
+                # Handle tags
+                tags_data = []
+                for key in request.data.keys():
+                    if key.startswith('tags[') and key.endswith(']'):
+                        tags_data.append(request.data[key])
+
+                # Create or get tags and add to project
+                from tags.models import Tag
+                for tag_name in tags_data:
+                    tag, created = Tag.objects.get_or_create(name=tag_name.strip())
+                    project.tags.add(tag)
+
+                # Handle images
+                images = []
+                for key in request.FILES.keys():
+                    if key.startswith('image_'):
+                        images.append(request.FILES[key])
+
+                # Create project pictures
+                for index, image in enumerate(images):
+                    picture = ProjectPicture.objects.create(
+                        image=image,
+                        is_main=(index == 0),  # First image is main
+                        order=index
+                    )
+                    project.pictures.add(picture)
+
+                # Return created project
+                response_serializer = ProjectDetailSerializer(project, context={'request': request})
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response(
+                {'error': f'Project creation failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
