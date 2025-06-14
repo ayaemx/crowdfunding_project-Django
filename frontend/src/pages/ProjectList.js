@@ -16,9 +16,12 @@ import {
   Paper,
   Pagination,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
-import { Search } from '@mui/icons-material'; // Removed FilterList
+import { Search, FilterList, ExpandMore } from '@mui/icons-material';
 import { projectsAPI, categoriesAPI } from '../services/api';
 import ProjectCard from '../components/ProjectCard';
 
@@ -38,7 +41,15 @@ const ProjectList = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Memoize loadProjects function to prevent unnecessary re-renders
+  // Enhanced search filters (PDF requirement: search by title or tag)
+  const [advancedFilters, setAdvancedFilters] = useState({
+    title: searchParams.get('title') || '',
+    tags: searchParams.get('tags') || '',
+    minAmount: searchParams.get('min_target') || '',
+    maxAmount: searchParams.get('max_target') || '',
+    status: searchParams.get('status') || 'active'
+  });
+
   const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
@@ -49,26 +60,51 @@ const ProjectList = () => {
         category: selectedCategory || slug,
         ordering: sortBy === 'latest' ? '-created_at' :
                  sortBy === 'popular' ? '-total_donations' :
-                 sortBy === 'ending' ? 'end_time' : '-created_at'
+                 sortBy === 'ending' ? 'end_time' :
+                 sortBy === 'rating' ? '-average_rating' : '-created_at',
+        // Advanced search parameters
+        title: advancedFilters.title,
+        tags: advancedFilters.tags,
+        min_target: advancedFilters.minAmount,
+        max_target: advancedFilters.maxAmount,
+        status: advancedFilters.status
       };
 
+      // Remove empty parameters
+      Object.keys(params).forEach(key => {
+        if (!params[key]) delete params[key];
+      });
+
+      console.log('Loading projects with params:', params);
       const response = await projectsAPI.getAll(params);
-      setProjects(response.data.results || response.data);
-      setTotalPages(Math.ceil((response.data.count || response.data.length) / 12));
+
+      // Handle different response formats and remove duplicates
+      let projectsData = response.data.results || response.data || [];
+
+      // Remove duplicates by ID
+      const uniqueProjects = projectsData.filter((project, index, self) =>
+        index === self.findIndex(p => p.id === project.id)
+      );
+
+      setProjects(uniqueProjects);
+      setTotalPages(Math.ceil((response.data.count || uniqueProjects.length) / 12));
 
     } catch (error) {
       console.error('Failed to load projects:', error);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedCategory, sortBy, page, slug]);
+  }, [searchQuery, selectedCategory, sortBy, page, slug, advancedFilters]);
 
   const loadCategories = useCallback(async () => {
     try {
       const response = await categoriesAPI.getAll();
-      setCategories(response.data);
+      const categoriesData = response.data.results || response.data;
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (error) {
       console.error('Failed to load categories:', error);
+      setCategories([]);
     }
   }, []);
 
@@ -86,6 +122,21 @@ const ProjectList = () => {
     setSearchParams({ search: searchQuery });
   };
 
+  // Enhanced search function (PDF requirement)
+  const handleAdvancedSearch = (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+
+    if (advancedFilters.title) params.append('title', advancedFilters.title);
+    if (advancedFilters.tags) params.append('tags', advancedFilters.tags);
+    if (advancedFilters.minAmount) params.append('min_target', advancedFilters.minAmount);
+    if (advancedFilters.maxAmount) params.append('max_target', advancedFilters.maxAmount);
+    if (advancedFilters.status) params.append('status', advancedFilters.status);
+
+    setSearchParams(params);
+    setPage(1);
+  };
+
   const handleCategoryChange = (categorySlug) => {
     setSelectedCategory(categorySlug);
     setPage(1);
@@ -100,9 +151,20 @@ const ProjectList = () => {
     setSearchQuery('');
     setSelectedCategory('');
     setSortBy('latest');
+    setAdvancedFilters({
+      title: '',
+      tags: '',
+      minAmount: '',
+      maxAmount: '',
+      status: 'active'
+    });
     setPage(1);
     setSearchParams({});
   };
+
+  const hasActiveFilters = searchQuery || selectedCategory ||
+    advancedFilters.title || advancedFilters.tags ||
+    advancedFilters.minAmount || advancedFilters.maxAmount;
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
@@ -130,9 +192,9 @@ const ProjectList = () => {
           borderRadius: 2
         }}
       >
-        <Grid container spacing={2} alignItems="center">
-          {/* Search */}
-          <Grid item xs={12} md={6}>
+        {/* Basic Search */}
+        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Grid xs={12} md={6}>
             <Box component="form" onSubmit={handleSearch}>
               <TextField
                 fullWidth
@@ -150,8 +212,7 @@ const ProjectList = () => {
             </Box>
           </Grid>
 
-          {/* Category Filter */}
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <FormControl fullWidth>
               <InputLabel>Category</InputLabel>
               <Select
@@ -169,8 +230,7 @@ const ProjectList = () => {
             </FormControl>
           </Grid>
 
-          {/* Sort */}
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <FormControl fullWidth>
               <InputLabel>Sort by</InputLabel>
               <Select
@@ -180,14 +240,102 @@ const ProjectList = () => {
               >
                 <MenuItem value="latest">Latest</MenuItem>
                 <MenuItem value="popular">Most Funded</MenuItem>
+                <MenuItem value="rating">Highest Rated</MenuItem>
                 <MenuItem value="ending">Ending Soon</MenuItem>
               </Select>
             </FormControl>
           </Grid>
         </Grid>
 
-        {/* Active Filters */}
-        {(searchQuery || selectedCategory) && (
+        {/* Advanced Search Accordion */}
+        <Accordion elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 1 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <FilterList sx={{ mr: 1 }} />
+              <Typography>Advanced Search</Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Box component="form" onSubmit={handleAdvancedSearch}>
+              <Grid container spacing={2}>
+                <Grid xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Search by Title"
+                    value={advancedFilters.title}
+                    onChange={(e) => setAdvancedFilters(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter project title..."
+                  />
+                </Grid>
+
+                <Grid xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Search by Tags"
+                    value={advancedFilters.tags}
+                    onChange={(e) => setAdvancedFilters(prev => ({ ...prev, tags: e.target.value }))}
+                    placeholder="Enter tags (comma separated)..."
+                  />
+                </Grid>
+
+                <Grid xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Min Funding Goal (EGP)"
+                    type="number"
+                    value={advancedFilters.minAmount}
+                    onChange={(e) => setAdvancedFilters(prev => ({ ...prev, minAmount: e.target.value }))}
+                    placeholder="0"
+                  />
+                </Grid>
+
+                <Grid xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Max Funding Goal (EGP)"
+                    type="number"
+                    value={advancedFilters.maxAmount}
+                    onChange={(e) => setAdvancedFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                    placeholder="1000000"
+                  />
+                </Grid>
+
+                <Grid xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Project Status</InputLabel>
+                    <Select
+                      value={advancedFilters.status}
+                      label="Project Status"
+                      onChange={(e) => setAdvancedFilters(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <MenuItem value="active">Active</MenuItem>
+                      <MenuItem value="completed">Completed</MenuItem>
+                      <MenuItem value="ended">Ended</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid xs={12} sm={6}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    sx={{
+                      bgcolor: '#00B964',
+                      '&:hover': { bgcolor: '#00A855' },
+                      height: '56px'
+                    }}
+                  >
+                    Apply Advanced Search
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
+          </AccordionDetails>
+        </Accordion>
+
+        {/* Active Filters - FIXED: Complete the Chip element */}
+        {hasActiveFilters && (
           <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               Active filters:
@@ -206,6 +354,20 @@ const ProjectList = () => {
                 size="small"
               />
             )}
+            {advancedFilters.title && (
+              <Chip
+                label={`Title: "${advancedFilters.title}"`}
+                onDelete={() => setAdvancedFilters(prev => ({ ...prev, title: '' }))}
+                size="small"
+              />
+            )}
+            {advancedFilters.tags && (
+              <Chip
+                label={`Tags: "${advancedFilters.tags}"`}
+                onDelete={() => setAdvancedFilters(prev => ({ ...prev, tags: '' }))}
+                size="small"
+              />
+            )}
             <Button size="small" onClick={clearFilters}>
               Clear all
             </Button>
@@ -213,7 +375,7 @@ const ProjectList = () => {
         )}
       </Paper>
 
-      {/* Projects Grid */}
+      {/* Projects Grid - FIXED: Removed deprecated 'item' prop */}
       {loading ? (
         <Box textAlign="center" py={8}>
           <Typography variant="h6" color="text.secondary">
@@ -224,7 +386,7 @@ const ProjectList = () => {
         <>
           <Grid container spacing={3}>
             {projects.map(project => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={project.id}>
+              <Grid xs={12} sm={6} md={4} lg={3} key={project.id}>
                 <ProjectCard project={project} />
               </Grid>
             ))}

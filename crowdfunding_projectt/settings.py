@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'projects.apps.ProjectsConfig',
     'categories.apps.CategoriesConfig',
-    'comments.apps.CommentsConfig',
+   'comments.apps.CommentsConfig',
     'tags.apps.TagsConfig',
     'home.apps.HomeConfig',
 
@@ -53,6 +53,9 @@ INSTALLED_APPS = [
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # *** KEEP AT TOP FOR CORS ***
@@ -204,9 +207,14 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+# Static files configuration
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Media files (User uploads) - KEEP YOUR WORKING CONFIG
 MEDIA_URL = '/media/'

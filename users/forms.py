@@ -1,90 +1,174 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, UserChangeForm
+from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError
 from .models import User
-import re
-from django.contrib.auth.password_validation import validate_password
 
-class DateInput(forms.DateInput):
-    input_type = 'date'
 
-# Registration form (only required fields)
-class UserRegistrationForm(forms.ModelForm):
-    password1 = forms.CharField(
-        label='Password',
-        widget=forms.PasswordInput,
-        help_text="Password must be at least 8 characters."
+class UserRegistrationForm(UserCreationForm):
+    """User registration form with Egyptian phone validation"""
+    first_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'First Name'
+        })
     )
-    password2 = forms.CharField(
-        label='Confirm Password',
-        widget=forms.PasswordInput,
-        help_text="Enter the same password again."
+
+    last_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Last Name'
+        })
     )
-    mobile_phone = forms.CharField(
-        label='Mobile Phone',
-        help_text="Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX).",
-        max_length=15
+
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Email Address'
+        })
+    )
+
+    # FIXED: Changed from mobile_phone to phone_number
+    phone_number = forms.CharField(
+        max_length=15,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Egyptian Phone (01XXXXXXXXX)'
+        }),
+        help_text="Enter Egyptian phone number format: 01XXXXXXXXX"
+    )
+
+    profile_picture = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
     )
 
     class Meta:
         model = User
-        fields = [
-            'first_name', 'last_name', 'email', 'mobile_phone', 'profile_picture'
-        ]
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'profile_picture', 'password1', 'password2']
 
-    def clean_mobile_phone(self):
-        phone = self.cleaned_data['mobile_phone']
-        if not re.match(r'^01[0125][0-9]{8}$', phone):
-            raise forms.ValidationError("Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX).")
-        return phone
 
-    def clean_password1(self):
-        password1 = self.cleaned_data.get('password1')
-        validate_password(password1)
-        return password1
+class EmailLoginForm(AuthenticationForm):
+    """Login form using email instead of username"""
+    username = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Email Address',
+            'autofocus': True
+        })
+    )
 
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("A user with that email already exists.")
-        return email
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Password'
+        })
+    )
 
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get('password1')
-        password2 = cleaned_data.get('password2')
-        if password1 and password2 and password1 != password2:
-            self.add_error('password2', "Passwords do not match.")
 
-# Profile edit form (optional fields + required, except email)
 class UserProfileEditForm(forms.ModelForm):
-    birthdate = forms.DateField(widget=DateInput(), required=False)
-    facebook_profile = forms.URLField(required=False)
-    country = forms.CharField(required=False)
+    """User profile edit form - FIXED field names"""
+    first_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'First Name'
+        })
+    )
+
+    last_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Last Name'
+        })
+    )
+
+    # FIXED: Changed from mobile_phone to phone_number
+    phone_number = forms.CharField(
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Egyptian Phone (01XXXXXXXXX)'
+        }),
+        help_text="Enter Egyptian phone number format: 01XXXXXXXXX"
+    )
+
+    profile_picture = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
+    )
+
+    birthdate = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+
+    facebook_profile = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Facebook Profile URL'
+        })
+    )
+
+    country = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Country'
+        })
+    )
 
     class Meta:
         model = User
-        fields = [
-            'first_name', 'last_name', 'mobile_phone', 'profile_picture',
-            'birthdate', 'facebook_profile', 'country'
-        ]
-class EmailLoginForm(forms.Form):
-    email = forms.EmailField()
-    password = forms.CharField(widget=forms.PasswordInput)
+        fields = ['first_name', 'last_name', 'phone_number', 'profile_picture', 'birthdate', 'facebook_profile',
+                  'country']
+
 
 class UserDeleteForm(forms.Form):
+    """Form for user account deletion with password confirmation"""
     password = forms.CharField(
-        label="Confirm your password",
-        widget=forms.PasswordInput,
-        help_text="Enter your password to confirm account deletion."
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your password to confirm deletion'
+        }),
+        help_text="Enter your current password to confirm account deletion."
     )
 
-# users/views.py or users/forms.py
-def send_activation_email(self, request, user):
-    current_site = get_current_site(request)
-    subject = 'Activate Your Account'
-    message = render_to_string('users/activate_account.html', {
-        'user': user,
-        'domain': current_site.domain,
-        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-        'token': token_generator.make_token(user),
-    })
-    user.email_user(subject, message, html_message=message)
+    confirm_deletion = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+        label="I understand that this action cannot be undone"
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if not self.user.check_password(password):
+            raise ValidationError("Incorrect password.")
+        return password

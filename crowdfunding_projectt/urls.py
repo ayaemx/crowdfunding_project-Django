@@ -13,13 +13,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # ===== API ENDPOINTS (for React frontend) =====
-    path('api/auth/', include('users.api_urls')),  # *** FIXED: Separate API URLs ***
-    path('api/projects/', include('projects.api_urls')),  # Projects API
-    path('api/categories/', include('categories.api_urls')),  # Enable when ready
-    path('api/tags/', include('tags.api_urls')),             # Enable when ready
+    path('admin/', admin.site.urls),
+    path('api/auth/', include('users.api_urls')),
+    path('api/projects/', include('projects.api_urls')),  # Keep projects/ prefix here
+    path('api/categories/', include('categories.api_urls')),
+    path('api/tags/', include('tags.api_urls')),
     path('api/comments/', include('comments.api_urls')),
-    path('api/home/', include('home.api_urls')),# Enable when ready
-
     # ===== TEMPLATE VIEWS (for testing) =====
     path('', include('home.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),

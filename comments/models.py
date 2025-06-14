@@ -1,106 +1,90 @@
-# comments/models.py - COMPLETE VERSION
 from django.db import models
-from django.conf import settings
-from projects.models import Project
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class Comment(models.Model):
-    """Comment model with threading support for replies"""
-    project = models.ForeignKey(
-        Project,
-        on_delete=models.CASCADE,
-        related_name='comments'
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='comments'
-    )
+    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField(max_length=1000)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # For bonus: comment replies (threading)
-    parent = models.ForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-        related_name='replies'
+    # ENHANCED: Better moderation fields
+    is_reported = models.BooleanField(default=False)
+    report_count = models.PositiveIntegerField(default=0)
+    is_hidden_by_admin = models.BooleanField(default=False)
+    moderation_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('active', 'Active'),
+            ('under_review', 'Under Review'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected/Hidden'),
+        ],
+        default='active'
     )
 
     class Meta:
         ordering = ['-created_at']
 
-    @property
-    def replies_count(self):
-        """Count of replies to this comment"""
-        return self.replies.filter().count()
-
-    @property
-    def is_reply(self):
-        """Check if this comment is a reply to another comment"""
-        return self.parent is not None
-
     def __str__(self):
-        return f"Comment by {self.user.username} on {self.project.title}"
+        return f'Comment by {self.user.username} on {self.project.title}'
+
+    @property
+    def should_be_hidden(self):
+        """Determine if comment should be hidden based on reports"""
+        # Hide if admin explicitly hid it
+        if self.is_hidden_by_admin:
+            return True
+        # Hide if too many reports (threshold: 3 reports)
+        if self.report_count >= 3:
+            return True
+        return False
 
 
 class CommentReport(models.Model):
-    """Model for reporting inappropriate comments"""
-    SPAM = 'spam'
-    INAPPROPRIATE = 'inappropriate'
-    HARASSMENT = 'harassment'
-    OFFENSIVE = 'offensive'
-    OTHER = 'other'
-
-    REASON_CHOICES = [
-        (SPAM, 'Spam Content'),
-        (INAPPROPRIATE, 'Inappropriate Content'),
-        (HARASSMENT, 'Harassment'),
-        (OFFENSIVE, 'Offensive Language'),
-        (OTHER, 'Other Reason'),
+    REPORT_TYPES = [
+        ('inappropriate_content', 'Inappropriate Content'),
+        ('spam', 'Spam'),
+        ('fraud', 'Fraud/Scam'),
+        ('copyright', 'Copyright Violation'),
+        ('harassment', 'Harassment'),
+        ('other', 'Other'),
     ]
 
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='comment_reports'
-    )
-    comment = models.ForeignKey(
-        Comment,
-        on_delete=models.CASCADE,
-        related_name='reports'
-    )
-    reason = models.CharField(max_length=20, choices=REASON_CHOICES, default=OTHER)
-    details = models.TextField(blank=True, null=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comment_reports')
+    report_type = models.CharField(max_length=50, choices=REPORT_TYPES)
+    description = models.TextField(max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
     is_reviewed = models.BooleanField(default=False)
+    admin_action = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('approved', 'Report Approved'),
+            ('dismissed', 'Report Dismissed'),
+        ],
+        default='pending'
+    )
 
     class Meta:
-        unique_together = ('user', 'comment')
+        unique_together = ['comment', 'reporter']
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Report by {self.user.username} on comment {self.comment.id} ({self.reason})"
+        return f"Report: {self.comment.id} by {self.reporter.username} ({self.report_type})"
 
 
+# ADDED: Missing HiddenComment model
 class HiddenComment(models.Model):
-    """Model for users to hide comments they've reported"""
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='hidden_comments'
-    )
-    comment = models.ForeignKey(
-        Comment,
-        on_delete=models.CASCADE,
-        related_name='hidden_by_users'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'comment')
+    comment = models.OneToOneField(Comment, on_delete=models.CASCADE, related_name='hidden_info')
+    hidden_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hidden_comments')
+    reason = models.TextField(max_length=500)
+    hidden_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} hid comment {self.comment.id}"
+        return f'Hidden comment {self.comment.id} by {self.hidden_by.username}'

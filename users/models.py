@@ -5,24 +5,29 @@ from django.urls import reverse
 
 
 class User(AbstractUser):
-    # Egyptian phone validator
+    # Egyptian phone validator (PDF requirement [1])
     egyptian_phone_validator = RegexValidator(
         regex=r'^01[0125][0-9]{8}$',
         message="Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX)."
     )
 
-    mobile_phone = models.CharField(
+    # FIXED: Changed from mobile_phone to phone_number to match serializer
+    phone_number = models.CharField(
         max_length=15,
         unique=True,
         validators=[egyptian_phone_validator],
-        help_text="Egyptian phone number format: 01XXXXXXXXX"
+        help_text="Egyptian phone number format: 01XXXXXXXXX",
+        blank=True,
+        null=True
     )
+
     profile_picture = models.ImageField(
         upload_to='profile_pics/',
         blank=True,
         null=True,
         help_text="Upload your profile picture"
     )
+
     birthdate = models.DateField(blank=True, null=True)
     facebook_profile = models.URLField(blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
@@ -31,6 +36,10 @@ class User(AbstractUser):
     # Additional fields for better user management
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # FIXED: Set email as username field for authentication
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.email})"

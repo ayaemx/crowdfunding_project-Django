@@ -14,8 +14,9 @@ import Register from './pages/Register';
 import ProjectList from './pages/ProjectList';
 import ProjectDetail from './pages/ProjectDetail';
 import CreateProject from './pages/CreateProject';
+import EditProject from './pages/EditProject'; // NEW
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile'; // Add this import
+import Profile from './pages/Profile';
 
 import testDjangoConnection from './utils/testConnection';
 import './styles/arabic-calligraphy.css';
@@ -46,6 +47,11 @@ function App() {
                 <Route path="/projects/create" element={
                   <ProtectedRoute>
                     <CreateProject />
+                  </ProtectedRoute>
+                } />
+                <Route path="/projects/:id/edit" element={
+                  <ProtectedRoute>
+                    <EditProject />
                   </ProtectedRoute>
                 } />
                 <Route path="/dashboard" element={

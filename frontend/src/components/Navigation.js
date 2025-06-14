@@ -10,18 +10,38 @@ import {
   MenuItem,
   Avatar,
   Container,
-  Select,
-  FormControl
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+  Divider
 } from '@mui/material';
-import { AccountCircle, Add, Language } from '@mui/icons-material';
+import {
+  AccountCircle,
+  Add,
+  Menu as MenuIcon,
+  Home,
+  Search,
+  Dashboard,
+  Person,
+  ExitToApp,
+  Close,
+  Favorite
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const [anchorEl, setAnchorEl] = useState(null);
-  const [language, setLanguage] = useState('en');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -34,225 +54,355 @@ const Navigation = () => {
   const handleLogout = () => {
     logout();
     handleClose();
+    setMobileMenuOpen(false);
     navigate('/');
   };
 
+  const handleMobileMenuToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const navigationItems = [
+    { label: 'Home', icon: <Home />, path: '/' },
+    { label: 'Discover', icon: <Search />, path: '/projects' },
+    ...(isAuthenticated ? [
+      { label: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+      { label: 'Profile', icon: <Person />, path: '/profile' }
+    ] : [])
+  ];
+
   return (
-    <AppBar
-      position="static"
-      elevation={0}
-      sx={{
-        bgcolor: 'white',
-        borderBottom: '1px solid #E5E7EB',
-        color: '#2C2C2C'
-      }}
-    >
-      <Container maxWidth="lg">
-        <Toolbar sx={{ justifyContent: 'space-between', py: 1 }}>
-          {/* Enhanced Logo Section */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              '&:hover': {
-                transform: 'scale(1.02)',
-                '& .arabic-logo': {
-                  color: '#00A855'
-                }
-              },
-              transition: 'all 0.3s ease'
-            }}
-            onClick={() => navigate('/')}
-          >
-            {/* Arabic Calligraphy Logo */}
-            <Box sx={{ mr: 3 }}>
-              <Typography
-                className="arabic-logo"
-                sx={{
-                  fontFamily: 'Scheherazade New, Amiri, serif',
-                  fontWeight: 700,
-                  fontSize: '2.2rem',
-                  color: '#00B964',
-                  direction: 'rtl',
-                  lineHeight: 1,
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                  background: 'linear-gradient(45deg, #00B964 30%, #4CAF50 90%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  transition: 'all 0.3s ease',
-                  letterSpacing: '2px',
-                  // Add calligraphy-style decorative elements
-                  position: 'relative',
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    bottom: '-2px',
-                    right: '0',
-                    left: '0',
-                    height: '2px',
-                    background: 'linear-gradient(90deg, transparent 0%, #00B964 50%, transparent 100%)',
-                    borderRadius: '1px'
-                  }
-                }}
-              >
-                فينا الخير
-              </Typography>
-              {/* Decorative Arabic ornament */}
+    <>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          bgcolor: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid #E8F5E8',
+          py: 1
+        }}
+      >
+        <Container maxWidth="lg">
+          <Toolbar sx={{ px: { xs: 0, sm: 2 }, minHeight: '72px !important' }}>
+            {/* Logo Section - GoFundMe Style */}
+            <Box
+              onClick={() => navigate('/')}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                flexGrow: isMobile ? 1 : 0,
+                mr: { xs: 0, md: 6 }
+              }}
+            >
+              {/* Logo Icon */}
               <Box sx={{
-                textAlign: 'center',
-                mt: -0.5,
-                direction: 'rtl'
+                background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
+                borderRadius: 4,
+                p: 1.5,
+                mr: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 52,
+                height: 52,
+                boxShadow: '0 4px 16px rgba(0, 168, 107, 0.25)'
               }}>
-                <Typography sx={{
-                  fontSize: '0.8rem',
-                  color: '#00B964',
-                  fontFamily: 'Scheherazade New, serif',
-                  opacity: 0.7
-                }}>
-                  ❋ ❋ ❋
+                <Favorite sx={{ color: 'white', fontSize: '1.6rem' }} />
+              </Box>
+
+              {/* Arabic and English Names */}
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: '#2E3B2E',
+                    fontWeight: 'bold',
+                    fontSize: { xs: '1.2rem', sm: '1.4rem' },
+                    fontFamily: '"Cairo", "Inter", sans-serif',
+                    lineHeight: 1.2
+                  }}
+                >
+                  الخير فينا
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#00A86B',
+                    display: 'block',
+                    fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                    fontWeight: 600,
+                    letterSpacing: '1px',
+                    lineHeight: 1,
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  GOODNESS
                 </Typography>
               </Box>
             </Box>
 
-            {/* English Brand Name */}
-            <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: '#2C2C2C',
-                  fontSize: '1.5rem',
-                  letterSpacing: '-0.5px'
-                }}
-              >
-                FundEgypt
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: '#6B7280',
-                  fontSize: '0.75rem',
-                  display: 'block',
-                  lineHeight: 1,
-                  fontWeight: 500
-                }}
-              >
-                Crowdfunding Platform
-              </Typography>
-            </Box>
-          </Box>
+            {/* Desktop Navigation - More Spaced */}
+            {!isMobile && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                <Box sx={{ display: 'flex', gap: 3, mr: 'auto' }}>
+                  {navigationItems.map((item) => (
+                    <Button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      startIcon={item.icon}
+                      sx={{
+                        color: '#4A5D4A',
+                        fontWeight: 500,
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: 3,
+                        '&:hover': {
+                          bgcolor: '#E8F5E8',
+                          color: '#2E3B2E'
+                        }
+                      }}
+                    >
+                      {item.label}
+                    </Button>
+                  ))}
+                </Box>
 
-          {/* Navigation Links */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Language Selector */}
-            <FormControl size="small" sx={{ minWidth: 80, mr: 2 }}>
-              <Select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                displayEmpty
+                {isAuthenticated ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      onClick={() => navigate('/projects/create')}
+                      sx={{
+                        background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
+                        borderRadius: 4,
+                        px: 4,
+                        py: 1.5,
+                        fontWeight: 600,
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #00695C 0%, #00A86B 100%)',
+                        }
+                      }}
+                    >
+                      Start Campaign
+                    </Button>
+
+                    <IconButton onClick={handleMenu} sx={{ p: 0 }}>
+                      {user?.profile_picture ? (
+                        <Avatar src={user.profile_picture} sx={{ width: 40, height: 40 }} />
+                      ) : (
+                        <Avatar sx={{ width: 40, height: 40, bgcolor: '#00A86B' }}>
+                          {user?.first_name?.[0] || <AccountCircle />}
+                        </Avatar>
+                      )}
+                    </IconButton>
+
+                    <Menu
+                      anchorEl={anchorEl}
+                      open={Boolean(anchorEl)}
+                      onClose={handleClose}
+                      PaperProps={{
+                        elevation: 16,
+                        sx: {
+                          mt: 2,
+                          borderRadius: 3,
+                          minWidth: 220,
+                          border: '1px solid #E8F5E8',
+                          boxShadow: '0 8px 32px rgba(0, 168, 107, 0.15)'
+                        }
+                      }}
+                    >
+                      <MenuItem onClick={() => { handleClose(); navigate('/dashboard'); }} sx={{ py: 2 }}>
+                        <Dashboard sx={{ mr: 2, color: '#00A86B' }} />
+                        Dashboard
+                      </MenuItem>
+                      <MenuItem onClick={() => { handleClose(); navigate('/profile'); }} sx={{ py: 2 }}>
+                        <Person sx={{ mr: 2, color: '#00A86B' }} />
+                        Profile
+                      </MenuItem>
+                      <Divider />
+                      <MenuItem onClick={handleLogout} sx={{ py: 2 }}>
+                        <ExitToApp sx={{ mr: 2, color: '#EF5350' }} />
+                        Sign Out
+                      </MenuItem>
+                    </Menu>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', gap: 3 }}>
+                    <Button
+                      onClick={() => navigate('/login')}
+                      sx={{
+                        color: '#4A5D4A',
+                        fontWeight: 500,
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: 3,
+                        '&:hover': {
+                          bgcolor: '#E8F5E8',
+                          color: '#2E3B2E'
+                        }
+                      }}
+                    >
+                      Sign In
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate('/register')}
+                      sx={{
+                        background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
+                        borderRadius: 4,
+                        px: 4,
+                        py: 1.5,
+                        fontWeight: 600,
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #00695C 0%, #00A86B 100%)',
+                        }
+                      }}
+                    >
+                      Join Us
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Mobile Menu Button */}
+            {isMobile && (
+              <IconButton
+                edge="end"
+                onClick={handleMobileMenuToggle}
+                sx={{ color: '#2E3B2E' }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 300,
+            bgcolor: '#F8FDF8'
+          }
+        }}
+      >
+        <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" fontWeight="bold" color="#2E3B2E">
+            Menu
+          </Typography>
+          <IconButton onClick={() => setMobileMenuOpen(false)}>
+            <Close sx={{ color: '#2E3B2E' }} />
+          </IconButton>
+        </Box>
+
+        <Divider sx={{ borderColor: '#E8F5E8' }} />
+
+        <List sx={{ px: 2 }}>
+          {navigationItems.map((item) => (
+            <ListItem
+              button
+              key={item.path}
+              onClick={() => {
+                navigate(item.path);
+                setMobileMenuOpen(false);
+              }}
+              sx={{
+                borderRadius: 3,
+                mb: 1,
+                '&:hover': {
+                  bgcolor: '#E8F5E8'
+                }
+              }}
+            >
+              <ListItemIcon sx={{ color: '#00A86B' }}>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.label} sx={{ color: '#2E3B2E' }} />
+            </ListItem>
+          ))}
+
+          {isAuthenticated && (
+            <>
+              <Divider sx={{ my: 2, borderColor: '#E8F5E8' }} />
+              <ListItem
+                button
+                onClick={() => {
+                  navigate('/projects/create');
+                  setMobileMenuOpen(false);
+                }}
                 sx={{
-                  '& .MuiSelect-select': {
-                    py: 0.5,
-                    fontSize: '0.875rem'
+                  borderRadius: 3,
+                  mb: 1,
+                  '&:hover': {
+                    bgcolor: '#E8F5E8'
                   }
                 }}
               >
-                <MenuItem value="en">🇺🇸 EN</MenuItem>
-                <MenuItem value="ar">🇪🇬 AR</MenuItem>
-              </Select>
-            </FormControl>
+                <ListItemIcon sx={{ color: '#00A86B' }}><Add /></ListItemIcon>
+                <ListItemText primary="Start Campaign" sx={{ color: '#2E3B2E' }} />
+              </ListItem>
 
-            {isAuthenticated ? (
-              <>
-                <Button
-                  startIcon={<Add />}
-                  onClick={() => navigate('/projects/create')}
-                  sx={{
-                    color: '#6B7280',
-                    '&:hover': {
-                      bgcolor: '#F3F4F6',
-                      color: '#00B964'
-                    }
-                  }}
-                >
-                  Start a project
-                </Button>
+              <ListItem
+                button
+                onClick={handleLogout}
+                sx={{
+                  borderRadius: 3,
+                  '&:hover': {
+                    bgcolor: '#E8F5E8'
+                  }
+                }}
+              >
+                <ListItemIcon sx={{ color: '#EF5350' }}><ExitToApp /></ListItemIcon>
+                <ListItemText primary="Sign Out" sx={{ color: '#2E3B2E' }} />
+              </ListItem>
+            </>
+          )}
 
-                <IconButton
-                  size="large"
-                  onClick={handleMenu}
-                  sx={{
-                    '&:hover': { bgcolor: '#F3F4F6' }
-                  }}
-                >
-                  {user?.profile_picture ? (
-                    <Avatar
-                      src={user.profile_picture}
-                      sx={{ width: 32, height: 32 }}
-                    />
-                  ) : (
-                    <AccountCircle sx={{ fontSize: 32, color: '#6B7280' }} />
-                  )}
-                </IconButton>
-
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleClose}
-                  PaperProps={{
-                    sx: {
-                      borderRadius: 2,
-                      mt: 1,
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                      border: '1px solid #E5E7EB'
-                    }
-                  }}
-                >
-                  <MenuItem onClick={() => { handleClose(); navigate('/dashboard'); }}>
-                    My Dashboard
-                  </MenuItem>
-                  <MenuItem onClick={() => { handleClose(); navigate('/profile'); }}>
-                    Profile Settings
-                  </MenuItem>
-                  <MenuItem onClick={handleLogout} sx={{ color: '#EF4444' }}>
-                    Sign Out
-                  </MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={() => navigate('/login')}
-                  sx={{
-                    color: '#6B7280',
-                    '&:hover': {
-                      bgcolor: '#F3F4F6',
-                      color: '#2C2C2C'
-                    }
-                  }}
-                >
-                  Sign in
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => navigate('/register')}
-                  sx={{
-                    bgcolor: '#00B964',
-                    '&:hover': {
-                      bgcolor: '#00A855'
-                    }
-                  }}
-                >
-                  Start a FundEgypt
-                </Button>
-              </>
-            )}
-          </Box>
-        </Toolbar>
-      </Container>
-    </AppBar>
+          {!isAuthenticated && (
+            <>
+              <Divider sx={{ my: 2, borderColor: '#E8F5E8' }} />
+              <ListItem
+                button
+                onClick={() => {
+                  navigate('/login');
+                  setMobileMenuOpen(false);
+                }}
+                sx={{
+                  borderRadius: 3,
+                  mb: 1,
+                  '&:hover': {
+                    bgcolor: '#E8F5E8'
+                  }
+                }}
+              >
+                <ListItemText primary="Sign In" sx={{ color: '#2E3B2E' }} />
+              </ListItem>
+              <ListItem
+                button
+                onClick={() => {
+                  navigate('/register');
+                  setMobileMenuOpen(false);
+                }}
+                sx={{
+                  borderRadius: 3,
+                  '&:hover': {
+                    bgcolor: '#E8F5E8'
+                  }
+                }}
+              >
+                <ListItemText primary="Join Us" sx={{ color: '#2E3B2E' }} />
+              </ListItem>
+            </>
+          )}
+        </List>
+      </Drawer>
+    </>
   );
 };
 

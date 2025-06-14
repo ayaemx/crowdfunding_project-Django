@@ -1,15 +1,16 @@
-from django.urls import path
-from . import views
-
-app_name = 'comments'  # ← This line defines the namespace
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    # URL to add a new comment to a project
-    path('project/<int:pk>/add/', views.add_comment, name='add_comment'),
-
-    # URL to reply to an existing comment
-    path('comment/<int:comment_id>/reply/', views.reply_comment, name='reply_comment'),
-
-    # URL to report a comment
-    path('comment/<int:comment_id>/report/', views.report_comment, name='report_comment'),
+    path('admin/', admin.site.urls),
+    path('api/auth/', include('users.api_urls')),
+    path('api/projects/', include('projects.api_urls')),
+    path('api/categories/', include('categories.api_urls')),
+    path('api/tags/', include('tags.api_urls')),
+    path('api/comments/', include('comments.api_urls')),  # ADD BACK
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

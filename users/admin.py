@@ -1,36 +1,49 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.html import format_html
 from .models import User
 
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Enhanced admin for custom User model"""
+    # FIXED: Changed mobile_phone to phone_number
+    list_display = ['email', 'first_name', 'last_name', 'phone_number', 'is_active', 'is_staff', 'date_joined']
+    list_filter = ['is_active', 'is_staff', 'is_superuser', 'date_joined', 'last_login']
+    search_fields = ['email', 'first_name', 'last_name', 'phone_number']
+    ordering = ['-date_joined']
 
-    # Display in admin list
-    list_display = ('email', 'username', 'full_name', 'mobile_phone', 'is_active', 'created_at')
-    list_filter = ('is_active', 'is_staff', 'country', 'created_at')
-    search_fields = ('email', 'username', 'first_name', 'last_name', 'mobile_phone')
-    ordering = ('-created_at',)
+    # FIXED: Updated fieldsets to use phone_number
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {
+            'fields': ('first_name', 'last_name', 'phone_number', 'profile_picture', 'birthdate', 'facebook_profile',
+                       'country')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
 
-    # Detail view fieldsets
-    fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {
-            'fields': ('mobile_phone', 'profile_picture', 'birthdate',
-                       'facebook_profile', 'country', 'created_at', 'updated_at')
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'first_name', 'last_name', 'phone_number', 'password1', 'password2'),
         }),
     )
 
-    # Add form fieldsets
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ('Additional Info', {
-            'fields': ('first_name', 'last_name', 'email', 'mobile_phone', 'profile_picture')
-        }),
-    )
+    # Custom admin methods
+    @admin.display(description='Profile Picture')
+    def profile_picture_display(self, obj):
+        if obj.profile_picture:
+            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%;" />',
+                               obj.profile_picture.url)
+        return "No Image"
 
-    readonly_fields = ('created_at', 'updated_at')
+    @admin.display(description='Projects Count')
+    def projects_count_display(self, obj):
+        return obj.projects_count
 
-    def full_name(self, obj):
-        return obj.full_name
+    @admin.display(description='Total Donated')
+    def total_donated_display(self, obj):
+        return f"{obj.total_donated} EGP"
 
-    full_name.short_description = 'Full Name'
+    # Add these to list_display if needed
+    # list_display = [..., 'profile_picture_display', 'projects_count_display', 'total_donated_display']

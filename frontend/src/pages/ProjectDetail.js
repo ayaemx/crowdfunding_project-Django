@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -11,8 +11,6 @@ import {
   LinearProgress,
   Chip,
   Avatar,
-  Divider,
-  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -22,22 +20,139 @@ import {
   Rating,
   IconButton,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Menu,
+  MenuItem,
+  Divider
 } from '@mui/material';
 import {
-  Share,
   Favorite,
   FavoriteBorder,
   Person,
-  CalendarToday,
-  LocationOn,
   Star,
-  Close
+  Close,
+  ArrowBackIos,
+  ArrowForwardIos,
+  MoreVert,
+  Edit,
+  Report,
+  Cancel
 } from '@mui/icons-material';
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  WhatsappShareButton,
+  FacebookIcon,
+  TwitterIcon,
+  WhatsappIcon
+} from 'react-share';
 import { projectsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import CommentSection from '../components/CommentSection';
 import ProjectCard from '../components/ProjectCard';
+import CommentSection from '../components/CommentSection';
+import ReportModal from '../components/ReportModal';
+
+// Helper function to handle Django media URLs
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return '/placeholder-project.jpg';
+  if (imagePath.startsWith('http')) return imagePath;
+  return `http://127.0.0.1:8000${imagePath}`;
+};
+
+// Image Slider Component
+const ImageSlider = ({ images = [] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (!images || images.length === 0) {
+    return (
+      <Box sx={{ height: 400, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 2 }}>
+        <Typography>No images available</Typography>
+      </Box>
+    );
+  }
+
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <Box sx={{ position: 'relative', height: 400, borderRadius: 2, overflow: 'hidden' }}>
+      <img
+        src={getImageUrl(images[currentIndex]?.image)}
+        alt={`Project image ${currentIndex + 1}`}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
+      />
+
+      {images.length > 1 && (
+        <>
+          <IconButton
+            onClick={prevImage}
+            sx={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              bgcolor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
+            }}
+          >
+            <ArrowBackIos />
+          </IconButton>
+
+          <IconButton
+            onClick={nextImage}
+            sx={{
+              position: 'absolute',
+              right: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              bgcolor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
+            }}
+          >
+            <ArrowForwardIos />
+          </IconButton>
+        </>
+      )}
+
+      {images.length > 1 && (
+        <Box sx={{
+          position: 'absolute',
+          bottom: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: 1
+        }}>
+          {images.map((_, index) => (
+            <Box
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: index === currentIndex ? 'white' : 'rgba(255,255,255,0.5)',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            />
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -55,22 +170,37 @@ const ProjectDetail = () => {
   const [donationSuccess, setDonationSuccess] = useState(false);
   const [rating, setRating] = useState(0);
   const [userRating, setUserRating] = useState(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    loadProjectData();
-  }, [id]);
+  // Project Management States
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
-  const loadProjectData = async () => {
+  const loadProjectData = useCallback(async () => {
+    if (!id) {
+      console.error('No project ID provided');
+      navigate('/projects');
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('Loading project with ID:', id);
 
-      // Load project details
       const projectResponse = await projectsAPI.getDetail(id);
       setProject(projectResponse.data);
 
-      // Load similar projects
-      const similarResponse = await projectsAPI.getSimilar(id);
-      setSimilarProjects(similarResponse.data);
+      // Try to load similar projects
+      try {
+        const similarResponse = await projectsAPI.getSimilar(id);
+        setSimilarProjects(similarResponse.data);
+      } catch (similarError) {
+        console.log('Similar projects not available:', similarError);
+        setSimilarProjects([]);
+      }
 
     } catch (error) {
       console.error('Failed to load project:', error);
@@ -78,7 +208,11 @@ const ProjectDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    loadProjectData();
+  }, [loadProjectData]);
 
   const handleDonate = async () => {
     if (!isAuthenticated) {
@@ -91,9 +225,19 @@ const ProjectDetail = () => {
       await projectsAPI.donate(id, parseFloat(donationAmount));
       setDonationSuccess(true);
       setDonationOpen(false);
-      loadProjectData(); // Refresh project data
+
+      // Update project data
+      setProject(prev => ({
+        ...prev,
+        total_donations: prev.total_donations + parseFloat(donationAmount),
+        donations_count: (prev.donations_count || 0) + 1
+      }));
+
+      setDonationAmount('');
+
     } catch (error) {
       console.error('Donation failed:', error);
+      setErrors({ donation: 'Donation failed. Please try again.' });
     } finally {
       setDonationLoading(false);
     }
@@ -108,10 +252,32 @@ const ProjectDetail = () => {
     try {
       await projectsAPI.rate(id, newRating);
       setUserRating(newRating);
-      loadProjectData(); // Refresh to get updated rating
+      loadProjectData();
     } catch (error) {
       console.error('Rating failed:', error);
     }
+  };
+
+  // Project Management Functions
+  const handleCancelProject = async () => {
+    if (!cancelReason.trim()) return;
+
+    try {
+      await projectsAPI.cancelProject(id, cancelReason);
+      setCancelOpen(false);
+      setCancelReason('');
+      loadProjectData();
+    } catch (error) {
+      console.error('Failed to cancel project:', error);
+    }
+  };
+
+  const canCancelProject = () => {
+    if (!project || !user) return false;
+    if (project.user?.id !== user.id) return false;
+
+    const progressPercentage = (project.total_donations / project.total_target) * 100;
+    return progressPercentage < 25;
   };
 
   const formatCurrency = (amount) => {
@@ -130,9 +296,6 @@ const ProjectDetail = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
   };
-
-  const progressPercentage = project ?
-    Math.min((project.total_donations / project.total_target) * 100, 100) : 0;
 
   if (loading) {
     return (
@@ -153,25 +316,22 @@ const ProjectDetail = () => {
     );
   }
 
+  const progressPercentage = project ?
+    Math.min((project.total_donations / project.total_target) * 100, 100) : 0;
+
   const daysRemaining = getDaysRemaining();
+  const shareUrl = `${window.location.origin}/projects/${id}`;
+  const shareTitle = project.title || 'Check out this amazing project!';
+  const isOwner = user && project.user?.id === user.id;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Grid container spacing={4}>
         {/* Main Content */}
-        <Grid item xs={12} md={8}>
-          {/* Project Images */}
+        <Grid xs={12} md={8}>
+          {/* Project Images Slider */}
           <Box sx={{ mb: 3 }}>
-            <img
-              src={project.pictures?.[0]?.image || '/placeholder-project.jpg'}
-              alt={project.title}
-              style={{
-                width: '100%',
-                height: isMobile ? '250px' : '400px',
-                objectFit: 'cover',
-                borderRadius: '12px'
-              }}
-            />
+            <ImageSlider images={project.pictures || []} />
           </Box>
 
           {/* Project Info */}
@@ -184,13 +344,61 @@ const ProjectDetail = () => {
                   variant="outlined"
                 />
               )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <IconButton size="small">
-                  <Share />
+
+              {/* Project Management Menu */}
+              <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* Share Buttons */}
+                <FacebookShareButton url={shareUrl} quote={shareTitle}>
+                  <FacebookIcon size={32} round />
+                </FacebookShareButton>
+
+                <TwitterShareButton url={shareUrl} title={shareTitle}>
+                  <TwitterIcon size={32} round />
+                </TwitterShareButton>
+
+                <WhatsappShareButton url={shareUrl} title={shareTitle}>
+                  <WhatsappIcon size={32} round />
+                </WhatsappShareButton>
+
+                <IconButton
+                  onClick={() => setIsFavorited(!isFavorited)}
+                  sx={{ color: isFavorited ? '#FF6B35' : '#6B7280' }}
+                >
+                  {isFavorited ? <Favorite /> : <FavoriteBorder />}
                 </IconButton>
-                <IconButton size="small">
-                  <FavoriteBorder />
-                </IconButton>
+
+                {/* Project Management Menu */}
+                {isAuthenticated && (
+                  <>
+                    <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
+                      <MoreVert />
+                    </IconButton>
+                    <Menu
+                      anchorEl={menuAnchor}
+                      open={Boolean(menuAnchor)}
+                      onClose={() => setMenuAnchor(null)}
+                    >
+                      {isOwner && (
+                        <MenuItem onClick={() => navigate(`/projects/${id}/edit`)}>
+                          <Edit sx={{ mr: 1 }} />
+                          Edit Project
+                        </MenuItem>
+                      )}
+                      {isOwner && canCancelProject() && (
+                        <MenuItem onClick={() => setCancelOpen(true)}>
+                          <Cancel sx={{ mr: 1 }} />
+                          Cancel Project
+                        </MenuItem>
+                      )}
+                      {!isOwner && (
+                        <MenuItem onClick={() => setReportOpen(true)}>
+                          <Report sx={{ mr: 1 }} />
+                          Report Project
+                        </MenuItem>
+                      )}
+                    </Menu>
+                  </>
+                )}
               </Box>
             </Box>
 
@@ -248,7 +456,7 @@ const ProjectDetail = () => {
         </Grid>
 
         {/* Sidebar */}
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Card sx={{ position: 'sticky', top: 20 }}>
             <CardContent sx={{ p: 3 }}>
               {/* Progress */}
@@ -339,7 +547,7 @@ const ProjectDetail = () => {
           </Typography>
           <Grid container spacing={3}>
             {similarProjects.slice(0, 4).map(similarProject => (
-              <Grid item xs={12} sm={6} md={3} key={similarProject.id}>
+              <Grid xs={12} sm={6} md={3} key={similarProject.id}>
                 <ProjectCard project={similarProject} />
               </Grid>
             ))}
@@ -390,6 +598,12 @@ const ProjectDetail = () => {
               />
             ))}
           </Box>
+
+          {errors.donation && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {errors.donation}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={() => setDonationOpen(false)}>
@@ -405,6 +619,43 @@ const ProjectDetail = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Project Cancellation Modal */}
+      <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Cancel Project</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action cannot be undone. Your project will be permanently cancelled.
+          </Alert>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Current funding: {progressPercentage.toFixed(1)}% (Less than 25% threshold allows cancellation)
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Reason for cancellation"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Please explain why you're cancelling this project..."
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelOpen(false)}>Cancel</Button>
+          <Button onClick={handleCancelProject} color="error" disabled={!cancelReason.trim()}>
+            Cancel Project
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Report Modal */}
+      <ReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        projectId={id}
+        type="project"
+      />
 
       {/* Success Alert */}
       {donationSuccess && (

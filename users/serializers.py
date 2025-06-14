@@ -5,15 +5,13 @@ from .models import User
 import re
 
 
-class UserSerializer(serializers.ModelSerializer):
-    """Serializer for user profile data"""
 
+
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'mobile_phone',
-                  'profile_picture', 'birthdate', 'facebook_profile', 'country',
-                  'date_joined', 'is_active']
-        read_only_fields = ['id', 'date_joined', 'email']
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'profile_picture', 'date_joined']
+        read_only_fields = ['id', 'email', 'date_joined']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -86,10 +84,36 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
+
+
 class UserLoginSerializer(serializers.Serializer):
-    """Login serializer for email-based authentication"""
     email = serializers.EmailField()
-    password = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if email and password:
+            # Check if user exists
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError('No account found with this email address.')
+
+            # Check if user is active
+            if not user.is_active:
+                raise serializers.ValidationError('Account not activated.')
+
+            # Authenticate user
+            user = authenticate(email=email, password=password)
+            if not user:
+                raise serializers.ValidationError('Invalid email or password.')
+
+            attrs['user'] = user
+            return attrs
+        else:
+            raise serializers.ValidationError('Must include email and password.')
 
 
 class UserProfileEditSerializer(serializers.ModelSerializer):

@@ -2,153 +2,124 @@ import { createTheme } from '@mui/material/styles';
 
 export const theme = createTheme({
   palette: {
-    mode: 'light',
     primary: {
-      main: '#00B964', // GoFundMe-inspired green
-      light: '#4CAF50',
-      dark: '#00A855',
+      main: '#00A86B', // Calm jade green
+      light: '#4CAF50', // Soft green
+      dark: '#00695C', // Deep teal
       contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#FF6B35', // Kickstarter-inspired orange
-      light: '#FF8A65',
-      dark: '#E64A19',
+      main: '#26A69A', // Teal
+      light: '#80CBC4', // Light teal
+      dark: '#00695C', // Dark teal
       contrastText: '#FFFFFF',
     },
     background: {
-      default: '#FAFBFC', // Very light gray like GoFundMe
+      default: '#F8FDF8', // Very light green tint
       paper: '#FFFFFF',
     },
     text: {
-      primary: '#2C2C2C',
-      secondary: '#6B7280',
+      primary: '#2E3B2E', // Dark green-gray
+      secondary: '#4A5D4A', // Medium green-gray
     },
-    grey: {
-      50: '#F9FAFB',
-      100: '#F3F4F6',
-      200: '#E5E7EB',
-      300: '#D1D5DB',
-      400: '#9CA3AF',
-      500: '#6B7280',
-      600: '#4B5563',
-      700: '#374151',
-      800: '#1F2937',
-      900: '#111827',
+    success: {
+      main: '#66BB6A', // Soft success green
+      light: '#C8E6C9',
+      dark: '#388E3C',
     },
+    warning: {
+      main: '#FFA726', // Warm orange
+      light: '#FFE0B2',
+      dark: '#F57C00',
+    },
+    error: {
+      main: '#EF5350', // Soft red
+      light: '#FFCDD2',
+      dark: '#C62828',
+    },
+    info: {
+      main: '#26A69A', // Teal
+      light: '#B2DFDB',
+      dark: '#00695C',
+    }
   },
   typography: {
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: '"Inter", "Cairo", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
-      fontSize: '3rem',
       fontWeight: 700,
-      lineHeight: 1.2,
-      letterSpacing: '-0.02em',
+      fontSize: '2.5rem',
+      color: '#2E3B2E',
     },
     h2: {
-      fontSize: '2.25rem',
       fontWeight: 600,
-      lineHeight: 1.3,
-      letterSpacing: '-0.01em',
+      fontSize: '2rem',
+      color: '#2E3B2E',
     },
     h3: {
-      fontSize: '1.875rem',
       fontWeight: 600,
-      lineHeight: 1.4,
+      fontSize: '1.75rem',
+      color: '#2E3B2E',
     },
     h4: {
+      fontWeight: 500,
       fontSize: '1.5rem',
-      fontWeight: 600,
-      lineHeight: 1.4,
-    },
-    h5: {
-      fontSize: '1.25rem',
-      fontWeight: 600,
-      lineHeight: 1.5,
-    },
-    h6: {
-      fontSize: '1.125rem',
-      fontWeight: 600,
-      lineHeight: 1.5,
+      color: '#2E3B2E',
     },
     body1: {
       fontSize: '1rem',
       lineHeight: 1.6,
-      color: '#374151',
+      color: '#4A5D4A',
     },
     body2: {
       fontSize: '0.875rem',
       lineHeight: 1.5,
-      color: '#6B7280',
-    },
-    button: {
-      textTransform: 'none',
-      fontWeight: 500,
-      fontSize: '0.875rem',
-    },
+      color: '#4A5D4A',
+    }
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 16, // More rounded like GoFundMe
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          padding: '10px 24px',
-          fontSize: '0.875rem',
-          fontWeight: 500,
+          borderRadius: 16,
           textTransform: 'none',
+          fontWeight: 600,
+          padding: '12px 32px',
           boxShadow: 'none',
           '&:hover': {
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-          },
+            boxShadow: '0 4px 16px rgba(0, 168, 107, 0.25)',
+          }
         },
         contained: {
+          background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
           '&:hover': {
-            boxShadow: '0 4px 12px rgba(0, 185, 100, 0.3)',
-          },
-        },
-        outlined: {
-          borderWidth: '1.5px',
-          '&:hover': {
-            borderWidth: '1.5px',
-          },
-        },
-      },
+            background: 'linear-gradient(135deg, #00695C 0%, #00A86B 100%)',
+          }
+        }
+      }
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          transition: 'all 0.2s ease-in-out',
+          borderRadius: 20,
+          boxShadow: '0 2px 20px rgba(0, 168, 107, 0.08)',
+          border: '1px solid #E8F5E8',
+          transition: 'all 0.3s ease',
           '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
-            borderColor: '#00B964',
-          },
-        },
-      },
+            boxShadow: '0 8px 32px rgba(0, 168, 107, 0.15)',
+            transform: 'translateY(-2px)',
+          }
+        }
+      }
     },
-    MuiTextField: {
+    MuiChip: {
       styleOverrides: {
         root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-            '& fieldset': {
-              borderColor: '#D1D5DB',
-            },
-            '&:hover fieldset': {
-              borderColor: '#9CA3AF',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#00B964',
-              borderWidth: '2px',
-            },
-          },
-        },
-      },
-    },
-  },
+          borderRadius: 12,
+        }
+      }
+    }
+  }
 });
