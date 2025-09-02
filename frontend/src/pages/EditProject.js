@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
-  Grid,
   Typography,
-  Box,
   TextField,
   Button,
-  Card,
-  CardContent,
+  Box,
+  Grid,
   FormControl,
   InputLabel,
   Select,
@@ -16,108 +13,97 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  Card,
+  CardContent,
+  CardMedia,
   IconButton,
-  ImageList,
-  ImageListItem,
-  useMediaQuery,
-  useTheme
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
-import {
-  Delete,
-  Add,
-  Save,
-  ArrowBack,
-  PhotoCamera,
-  Schedule,
-  AttachMoney
-} from '@mui/icons-material';
-
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { projectsAPI, categoriesAPI, tagsAPI } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { Add, Delete, PhotoCamera } from '@mui/icons-material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { projectsAPI, authAPI } from '../services/api';
 
 const EditProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user } = useAuth();
 
   const [project, setProject] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([]); // Initialize as empty array
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Form data
+  // Form state
   const [formData, setFormData] = useState({
     title: '',
     details: '',
     category: '',
     total_target: '',
-    currency: 'EGP',
-    start_time: new Date(),
-    end_time: new Date(),
     tags: [],
-    is_featured: false
+    pictures: []
   });
-
   const [newTag, setNewTag] = useState('');
-  const [images, setImages] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
-  const [imagesToDelete, setImagesToDelete] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   useEffect(() => {
-    loadProjectData();
-    loadCategories();
+    loadProjectAndCategories();
   }, [id]);
 
-  const loadProjectData = async () => {
+  const loadProjectAndCategories = async () => {
     try {
-      const response = await projectsAPI.getDetail(id);
-      const projectData = response.data;
+      setLoading(true);
+      setError('');
 
-      // Check if user is the owner
-      if (projectData.user?.id !== user?.id) {
-        navigate('/dashboard');
+      // Load project details and categories in parallel
+      const [projectResponse, categoriesResponse] = await Promise.all([
+        authAPI.getMyProjects(), // Get all user projects first
+        projectsAPI.getCategories()
+      ]);
+
+      // Find the specific project
+      const projectsData = projectResponse.data?.results || projectResponse.data || [];
+      const currentProject = Array.isArray(projectsData)
+        ? projectsData.find(p => p.id === parseInt(id))
+        : null;
+
+      if (!currentProject) {
+        setError('Project not found or you do not have permission to edit it.');
         return;
       }
 
-      setProject(projectData);
+      // Set categories - handle different response formats
+      const categoriesData = categoriesResponse.data?.results || categoriesResponse.data || [];
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+
+      // Set project data
+      setProject(currentProject);
       setFormData({
-        title: projectData.title,
-        details: projectData.details,
-        category: projectData.category?.id || '',
-        total_target: projectData.total_target,
-        currency: projectData.currency,
-        start_time: new Date(projectData.start_time),
-        end_time: new Date(projectData.end_time),
-        tags: projectData.tags?.map(tag => tag.name) || [],
-        is_featured: projectData.is_featured
+        title: currentProject.title || '',
+        details: currentProject.details || '',
+        category: currentProject.category?.id || currentProject.category || '',
+        total_target: currentProject.total_target || '',
+        tags: currentProject.tags || [],
+        pictures: currentProject.pictures || []
       });
-      setExistingImages(projectData.pictures || []);
+
     } catch (error) {
-      console.error('Failed to load project:', error);
-      setError('Failed to load project data');
+      console.error('Failed to load project data:', error);
+      setError('Failed to load project data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadCategories = async () => {
-    try {
-      const response = await categoriesAPI.getAll();
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleAddTag = () => {
@@ -137,56 +123,56 @@ const EditProject = () => {
     }));
   };
 
-  const handleImageUpload = (event) => {
-    const files = Array.from(event.target.files);
-    setImages(prev => [...prev, ...files]);
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(prev => [...prev, ...files]);
   };
 
-  const handleRemoveNewImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleRemoveExistingImage = (imageId) => {
-    setImagesToDelete(prev => [...prev, imageId]);
-    setExistingImages(prev => prev.filter(img => img.id !== imageId));
+  const handleRemoveExistingPicture = (pictureId) => {
+    setFormData(prev => ({
+      ...prev,
+      pictures: prev.pictures.filter(pic => pic.id !== pictureId)
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
+    setSuccess('');
 
     try {
-      const formDataToSend = new FormData();
+      const updateData = new FormData();
+      updateData.append('title', formData.title);
+      updateData.append('details', formData.details);
+      updateData.append('category', formData.category);
+      updateData.append('total_target', formData.total_target);
 
-      // Add basic project data
-      Object.keys(formData).forEach(key => {
-        if (key === 'tags') {
-          formData.tags.forEach((tag, index) => {
-            formDataToSend.append(`tags[${index}]`, tag);
-          });
-        } else if (key === 'start_time' || key === 'end_time') {
-          formDataToSend.append(key, formData[key].toISOString());
-        } else {
-          formDataToSend.append(key, formData[key]);
-        }
+      // Add tags
+      formData.tags.forEach(tag => {
+        updateData.append('tags', tag);
       });
 
-      // Add new images
-      images.forEach((image, index) => {
-        formDataToSend.append(`image_${index}`, image);
+      // Add new files
+      selectedFiles.forEach(file => {
+        updateData.append('pictures', file);
       });
 
-      // Add images to delete
-      imagesToDelete.forEach((imageId, index) => {
-        formDataToSend.append(`delete_image_${index}`, imageId);
+      // Add existing picture IDs to keep
+      formData.pictures.forEach(pic => {
+        updateData.append('existing_pictures', pic.id);
       });
 
-      await projectsAPI.update(id, formDataToSend);
+      await projectsAPI.updateProject(id, updateData);
       setSuccess('Project updated successfully!');
 
+      // Redirect back to dashboard after successful update
       setTimeout(() => {
-        navigate(`/projects/${id}`);
+        navigate('/dashboard');
       }, 2000);
 
     } catch (error) {
@@ -199,316 +185,250 @@ const EditProject = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>Loading project...</Typography>
+      <Container maxWidth="md" sx={{ mt: 4, textAlign: 'center' }}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Loading project...
+        </Typography>
+      </Container>
+    );
+  }
+
+  if (error && !project) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/dashboard')}>
+          Back to Dashboard
+        </Button>
       </Container>
     );
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => navigate(-1)}
-            sx={{ mb: 2, color: '#6B7280' }}
-          >
-            Back
-          </Button>
-          <Typography
-            variant={isMobile ? "h4" : "h3"}
-            fontWeight="bold"
-            gutterBottom
-          >
-            Edit Your Campaign
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Update your project details and keep your supporters informed
-          </Typography>
-        </Box>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Edit Project
+      </Typography>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-        {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {success}
-          </Alert>
-        )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {success}
+        </Alert>
+      )}
 
-        <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={4}>
-            {/* Main Content */}
-            <Grid xs={12} md={8}>
-              <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 3 }}>
-                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    Project Details
-                  </Typography>
+      <Card>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
+              {/* Title */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Project Title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Grid>
 
-                  {/* Title */}
+              {/* Details */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Project Details"
+                  name="details"
+                  value={formData.details}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Grid>
+
+              {/* Category */}
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    label="Category"
+                  >
+                    {categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Total Target */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Target Amount (EGP)"
+                  name="total_target"
+                  value={formData.total_target}
+                  onChange={handleInputChange}
+                  required
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
+
+              {/* Tags */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Tags
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                  {formData.tags.map((tag, index) => (
+                    <Chip
+                      key={index}
+                      label={tag}
+                      onDelete={() => handleRemoveTag(tag)}
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                   <TextField
-                    fullWidth
-                    label="Campaign Title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    required
-                    sx={{ mb: 3 }}
-                    helperText="Choose a clear, compelling title for your campaign"
+                    label="Add Tag"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
                   />
-
-                  {/* Description */}
-                  <TextField
-                    fullWidth
-                    label="Campaign Description"
-                    multiline
-                    rows={6}
-                    value={formData.details}
-                    onChange={(e) => handleInputChange('details', e.target.value)}
-                    required
-                    sx={{ mb: 3 }}
-                    helperText="Tell your story and explain why people should support your campaign"
-                  />
-
-                  {/* Category */}
-                  <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={formData.category}
-                      label="Category"
-                      onChange={(e) => handleInputChange('category', e.target.value)}
-                      required
-                    >
-                      {categories.map(category => (
-                        <MenuItem key={category.id} value={category.id}>
-                          {category.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  {/* Tags */}
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                      Tags
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                      {formData.tags.map((tag, index) => (
-                        <Chip
-                          key={index}
-                          label={tag}
-                          onDelete={() => handleRemoveTag(tag)}
-                          color="primary"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <TextField
-                        size="small"
-                        placeholder="Add a tag"
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                      />
-                      <Button
-                        variant="outlined"
-                        startIcon={<Add />}
-                        onClick={handleAddTag}
-                        disabled={!newTag.trim()}
-                      >
-                        Add
-                      </Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Images Section */}
-              <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 3, mt: 3 }}>
-                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    Campaign Images
-                  </Typography>
-
-                  {/* Existing Images */}
-                  {existingImages.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Current Images
-                      </Typography>
-                      <ImageList cols={isMobile ? 2 : 3} gap={8}>
-                        {existingImages.map((image) => (
-                          <ImageListItem key={image.id} sx={{ position: 'relative' }}>
-                            <img
-                              src={image.image}
-                              alt="Project"
-                              style={{ borderRadius: 8, height: 150, objectFit: 'cover' }}
-                            />
-                            <IconButton
-                              sx={{
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                bgcolor: 'rgba(0,0,0,0.7)',
-                                color: 'white',
-                                '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
-                              }}
-                              size="small"
-                              onClick={() => handleRemoveExistingImage(image.id)}
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </ImageListItem>
-                        ))}
-                      </ImageList>
-                    </Box>
-                  )}
-
-                  {/* New Images */}
-                  {images.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        New Images to Add
-                      </Typography>
-                      <ImageList cols={isMobile ? 2 : 3} gap={8}>
-                        {images.map((image, index) => (
-                          <ImageListItem key={index} sx={{ position: 'relative' }}>
-                            <img
-                              src={URL.createObjectURL(image)}
-                              alt="New"
-                              style={{ borderRadius: 8, height: 150, objectFit: 'cover' }}
-                            />
-                            <IconButton
-                              sx={{
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                bgcolor: 'rgba(0,0,0,0.7)',
-                                color: 'white',
-                                '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' }
-                              }}
-                              size="small"
-                              onClick={() => handleRemoveNewImage(index)}
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </ImageListItem>
-                        ))}
-                      </ImageList>
-                    </Box>
-                  )}
-
-                  {/* Upload Button */}
                   <Button
                     variant="outlined"
-                    component="label"
-                    startIcon={<PhotoCamera />}
-                    sx={{ borderStyle: 'dashed', py: 2 }}
-                    fullWidth
+                    onClick={handleAddTag}
+                    startIcon={<Add />}
                   >
-                    Add More Images
-                    <input
-                      type="file"
-                      hidden
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                    />
+                    Add
                   </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+                </Box>
+              </Grid>
 
-            {/* Sidebar */}
-            <Grid xs={12} md={4}>
-              <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 3, position: 'sticky', top: 20 }}>
-                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    Campaign Settings
+              {/* Existing Pictures */}
+              {formData.pictures.length > 0 && (
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    Current Pictures
                   </Typography>
+                  <Grid container spacing={2}>
+                    {formData.pictures.map((picture) => (
+                      <Grid item xs={6} sm={4} md={3} key={picture.id}>
+                        <Card>
+                          <CardMedia
+                            component="img"
+                            height="120"
+                            image={picture.image_url || picture.image}
+                            alt="Project"
+                          />
+                          <Box sx={{ p: 1, textAlign: 'center' }}>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleRemoveExistingPicture(picture.id)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+              )}
 
-                  {/* Funding Goal */}
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                      <AttachMoney sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      Funding Goal
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Target Amount"
-                      value={formData.total_target}
-                      onChange={(e) => handleInputChange('total_target', e.target.value)}
-                      required
-                      InputProps={{
-                        endAdornment: <Typography color="text.secondary">EGP</Typography>
-                      }}
-                    />
-                  </Box>
+              {/* New Pictures */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Add New Pictures
+                </Typography>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<PhotoCamera />}
+                  sx={{ mb: 2 }}
+                >
+                  Select Pictures
+                  <input
+                    type="file"
+                    hidden
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                  />
+                </Button>
 
-                  {/* Timeline */}
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                      <Schedule sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      Campaign Timeline
-                    </Typography>
+                {selectedFiles.length > 0 && (
+                  <Grid container spacing={2}>
+                    {selectedFiles.map((file, index) => (
+                      <Grid item xs={6} sm={4} md={3} key={index}>
+                        <Card>
+                          <CardMedia
+                            component="img"
+                            height="120"
+                            image={URL.createObjectURL(file)}
+                            alt="New"
+                          />
+                          <Box sx={{ p: 1, textAlign: 'center' }}>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleRemoveFile(index)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Grid>
 
-                    <DateTimePicker
-                      label="Start Date"
-                      value={formData.start_time}
-                      onChange={(newValue) => handleInputChange('start_time', newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} fullWidth sx={{ mb: 2 }} />
-                      )}
-                    />
-
-                    <DateTimePicker
-                      label="End Date"
-                      value={formData.end_time}
-                      onChange={(newValue) => handleInputChange('end_time', newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} fullWidth />
-                      )}
-                    />
-                  </Box>
-
-                  {/* Action Buttons */}
-                  <Box sx={{ display: 'flex', gap: 2, flexDirection: isMobile ? 'column' : 'row' }}>
-                    <Button
-                      variant="outlined"
-                      onClick={() => navigate(-1)}
-                      fullWidth={isMobile}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      disabled={saving}
-                      startIcon={saving ? <CircularProgress size={20} /> : <Save />}
-                      sx={{
-                        bgcolor: '#00B964',
-                        '&:hover': { bgcolor: '#00A855' }
-                      }}
-                      fullWidth={isMobile}
-                    >
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
+              {/* Submit Buttons */}
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate('/dashboard')}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={saving}
+                    sx={{
+                      background: 'linear-gradient(135deg, #00B964 0%, #00A855 100%)',
+                      '&:hover': { background: 'linear-gradient(135deg, #00A855 0%, #009648 100%)' }
+                    }}
+                  >
+                    {saving ? 'Updating...' : 'Update Project'}
+                  </Button>
+                </Box>
+              </Grid>
             </Grid>
-          </Grid>
-        </Box>
-      </Container>
-    </LocalizationProvider>
+          </form>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

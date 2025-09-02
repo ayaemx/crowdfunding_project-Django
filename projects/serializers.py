@@ -51,61 +51,52 @@ class ProjectReportSerializer(serializers.ModelSerializer):
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for project lists (homepage, search, etc.)"""
+    """FIXED: Lightweight serializer for project lists with TAGS"""
     category = serializers.SerializerMethodField()
     pictures = serializers.SerializerMethodField()
     total_donations = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     donations_count = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()  # ADDED: Missing tags field
 
     class Meta:
         model = Project
         fields = [
-            'id', 'title', 'details', 'category', 'pictures',
+            'id', 'title', 'details', 'category', 'pictures', 'tags',  # ADDED: tags
             'total_target', 'total_donations', 'average_rating',
             'donations_count', 'is_featured', 'user',
             'start_time', 'end_time', 'created_at'
         ]
 
     def get_category(self, obj):
-        """Get category details"""
         if obj.category:
             return {'id': obj.category.id, 'name': obj.category.name, 'slug': obj.category.slug}
         return None
 
     def get_pictures(self, obj):
-        """Get project pictures"""
         pictures = obj.pictures.all().order_by('order')
-        return [
-            {
-                'id': pic.id,
-                'image': self.context['request'].build_absolute_uri(pic.image.url) if pic.image else None,
-                'is_main': pic.is_main,
-                'order': pic.order
-            }
-            for pic in pictures
-        ]
+        return [{
+            'id': pic.id,
+            'image': self.context['request'].build_absolute_uri(pic.image.url) if pic.image else None,
+            'is_main': pic.is_main,
+            'order': pic.order
+        } for pic in pictures]
 
     def get_total_donations(self, obj):
-        """Get total donations amount"""
-        return getattr(obj, 'total_donations', 0) or 0  # Use annotation if available
+        return getattr(obj, 'total_donations', 0) or 0
 
     def get_average_rating(self, obj):
-        """Get average rating"""
         rating = getattr(obj, 'average_rating', None)
         if rating:
             return round(rating, 1)
-        # Fallback calculation
         avg = obj.ratings.aggregate(avg=Avg('rating'))['avg']
         return round(avg, 1) if avg else 0
 
     def get_donations_count(self, obj):
-        """Get donations count"""
         return getattr(obj, 'donations_count', obj.donations.count())
 
     def get_user(self, obj):
-        """Get project owner info"""
         if obj.owner:
             return {
                 'id': obj.owner.id,
@@ -115,6 +106,109 @@ class ProjectListSerializer(serializers.ModelSerializer):
                     obj.owner.profile_picture.url) if obj.owner.profile_picture else None
             }
         return None
+
+    def get_tags(self, obj):
+        """FIXED: Include tags in ALL project lists"""
+        return [{'id': tag.id, 'name': tag.name} for tag in obj.tags.all()]
+
+
+# Rest of your serializers remain the same...
+class PersonalizedRecommendationSerializer(serializers.ModelSerializer):
+    """Enhanced serializer for personalized recommendations"""
+    category = serializers.SerializerMethodField()
+    pictures = serializers.SerializerMethodField()
+    total_donations = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    donations_count = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
+    recommendation_reason = serializers.SerializerMethodField()
+    urgency_score = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = [
+            'id', 'title', 'details', 'category', 'pictures', 'tags',
+            'total_target', 'total_donations', 'average_rating',
+            'donations_count', 'is_featured', 'user',
+            'start_time', 'end_time', 'created_at',
+            'recommendation_reason', 'urgency_score'
+        ]
+
+    def get_category(self, obj):
+        if obj.category:
+            return {'id': obj.category.id, 'name': obj.category.name, 'slug': obj.category.slug}
+        return None
+
+    def get_pictures(self, obj):
+        pictures = obj.pictures.all().order_by('order')
+        return [{
+            'id': pic.id,
+            'image': self.context['request'].build_absolute_uri(pic.image.url) if pic.image else None,
+            'is_main': pic.is_main,
+            'order': pic.order
+        } for pic in pictures]
+
+    def get_total_donations(self, obj):
+        return getattr(obj, 'total_donations', 0) or 0
+
+    def get_average_rating(self, obj):
+        rating = getattr(obj, 'average_rating', None)
+        if rating:
+            return round(rating, 1)
+        return 0
+
+    def get_donations_count(self, obj):
+        return getattr(obj, 'donations_count', obj.donations.count())
+
+    def get_user(self, obj):
+        if obj.owner:
+            return {
+                'id': obj.owner.id,
+                'first_name': obj.owner.first_name,
+                'last_name': obj.owner.last_name,
+                'profile_picture': self.context['request'].build_absolute_uri(
+                    obj.owner.profile_picture.url) if obj.owner.profile_picture else None
+            }
+        return None
+
+    def get_tags(self, obj):
+        """Include tags in recommendations"""
+        return [{'id': tag.id, 'name': tag.name} for tag in obj.tags.all()]
+
+    def get_recommendation_reason(self, obj):
+        """Explain why this project was recommended"""
+        request = self.context.get('request')
+        if not request:
+            return "Popular project"
+
+        activity = request.session.get('user_activity', {})
+        viewed_projects = activity.get('viewed_projects', [])
+        category_interests = activity.get('category_interests', {})
+
+        if obj.category and obj.category.slug in category_interests:
+            return f"Based on your interest in {obj.category.name}"
+        elif viewed_projects:
+            return "Similar to projects you've viewed"
+        else:
+            return "Trending project"
+
+    def get_urgency_score(self, obj):
+        """Calculate urgency based on time remaining and funding gap"""
+        from django.utils import timezone
+
+        if not obj.end_time:
+            return 0
+
+        days_remaining = (obj.end_time - timezone.now()).days
+        funding_percentage = (getattr(obj, 'total_donations', 0) or 0) / obj.total_target * 100
+
+        if days_remaining < 7 and funding_percentage < 80:
+            return 9
+        elif days_remaining < 14 or funding_percentage < 50:
+            return 6
+        else:
+            return 3
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
@@ -137,17 +231,14 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_category(self, obj):
-        """Get category details"""
         if obj.category:
             return {'id': obj.category.id, 'name': obj.category.name, 'slug': obj.category.slug}
         return None
 
     def get_tags(self, obj):
-        """Get tag details"""
         return [{'id': tag.id, 'name': tag.name} for tag in obj.tags.all()]
 
     def get_user(self, obj):
-        """Get project owner info"""
         if obj.owner:
             return {
                 'id': obj.owner.id,
@@ -159,11 +250,9 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         return None
 
     def get_total_donations(self, obj):
-        """Get total donations amount"""
         return getattr(obj, 'total_donations', 0) or 0
 
     def get_average_rating(self, obj):
-        """Get average rating"""
         rating = getattr(obj, 'average_rating', None)
         if rating:
             return round(rating, 1)
@@ -171,11 +260,9 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         return round(avg, 1) if avg else 0
 
     def get_donations_count(self, obj):
-        """Get donations count"""
         return getattr(obj, 'donations_count', obj.donations.count())
 
     def get_ratings_count(self, obj):
-        """Get ratings count"""
         return obj.ratings.count()
 
 
@@ -190,25 +277,21 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_title(self, value):
-        """Validate project title"""
         if len(value.strip()) < 5:
             raise serializers.ValidationError("Title must be at least 5 characters long.")
         return value.strip()
 
     def validate_details(self, value):
-        """Validate project description"""
         if len(value.strip()) < 100:
             raise serializers.ValidationError("Description must be at least 100 characters long.")
         return value.strip()
 
     def validate_total_target(self, value):
-        """Validate funding goal"""
         if value < 100:
             raise serializers.ValidationError("Minimum funding goal is 100 EGP.")
         return value
 
     def validate(self, attrs):
-        """Validate start and end times"""
         start_time = attrs.get('start_time')
         end_time = attrs.get('end_time')
 
@@ -218,7 +301,6 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
                     'end_time': 'End date must be after start date.'
                 })
 
-            # Check minimum 7 days duration
             duration = end_time - start_time
             if duration.days < 7:
                 raise serializers.ValidationError({
@@ -228,6 +310,5 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        """Auto-set owner from request context"""
         validated_data['owner'] = self.context['request'].user
         return super().create(validated_data)

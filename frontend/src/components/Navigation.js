@@ -17,7 +17,8 @@ import {
   ListItemText,
   useMediaQuery,
   useTheme,
-  Divider
+  Divider,
+  Chip
 } from '@mui/material';
 import {
   AccountCircle,
@@ -29,8 +30,13 @@ import {
   Person,
   ExitToApp,
   Close,
-  Favorite
+  Favorite,
+  TrendingUp,
+  AutoAwesome,
+  Campaign,
+  ManageAccounts
 } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,8 +44,8 @@ const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -77,123 +83,150 @@ const Navigation = () => {
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: 'rgba(255, 255, 255, 0.98)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid #E8F5E8',
-          py: 1
+          background: 'linear-gradient(135deg, #2C3E2D 0%, #1B2A1C 100%)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}
       >
-        <Container maxWidth="lg">
-          <Toolbar sx={{ px: { xs: 0, sm: 2 }, minHeight: '72px !important' }}>
-            {/* Logo Section - GoFundMe Style */}
+        <Container maxWidth="xl">
+          <Toolbar sx={{ py: { xs: 0.5, md: 1 }, minHeight: { xs: 56, md: 64 } }}>
+            {/* Logo Section - Enhanced Responsive */}
             <Box
               onClick={() => navigate('/')}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 cursor: 'pointer',
-                flexGrow: isMobile ? 1 : 0,
-                mr: { xs: 0, md: 6 }
+                flexGrow: { xs: 1, lg: 0 },
+                mr: { xs: 0, lg: 4 }
               }}
             >
               {/* Logo Icon */}
-              <Box sx={{
-                background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
-                borderRadius: 4,
-                p: 1.5,
-                mr: 3,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: 52,
-                height: 52,
-                boxShadow: '0 4px 16px rgba(0, 168, 107, 0.25)'
-              }}>
-                <Favorite sx={{ color: 'white', fontSize: '1.6rem' }} />
+              <Box
+                sx={{
+                  width: { xs: 35, md: 45 },
+                  height: { xs: 35, md: 45 },
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #D4A574 0%, #C19660 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: { xs: 1, md: 2 },
+                  boxShadow: '0 4px 12px rgba(212, 165, 116, 0.3)'
+                }}
+              >
+                <TrendingUp sx={{ color: 'white', fontSize: { xs: 20, md: 24 } }} />
               </Box>
 
-              {/* Arabic and English Names */}
-              <Box>
+              {/* Brand Names */}
+              <Box sx={{ display: { xs: 'block', sm: 'block' } }}>
                 <Typography
                   variant="h5"
+                  component="div"
                   sx={{
-                    color: '#2E3B2E',
-                    fontWeight: 'bold',
-                    fontSize: { xs: '1.2rem', sm: '1.4rem' },
-                    fontFamily: '"Cairo", "Inter", sans-serif',
-                    lineHeight: 1.2
+                    fontWeight: 800,
+                    color: 'white',
+                    fontFamily: '"Inter", sans-serif',
+                    lineHeight: 1,
+                    fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem' }
                   }}
                 >
-                  الخير فينا
+                  FundEgypt
                 </Typography>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#00A86B',
-                    display: 'block',
-                    fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                    color: '#D4A574',
                     fontWeight: 600,
-                    letterSpacing: '1px',
-                    lineHeight: 1,
-                    textTransform: 'uppercase'
+                    fontSize: { xs: '0.6rem', md: '0.7rem' },
+                    letterSpacing: '0.5px',
+                    fontFamily: '"Inter", sans-serif',
+                    display: { xs: 'none', sm: 'block' }
                   }}
                 >
-                  GOODNESS
+                  CROWDFUNDING PLATFORM
                 </Typography>
               </Box>
             </Box>
 
-            {/* Desktop Navigation - More Spaced */}
+            {/* Desktop Navigation - Enhanced Responsive */}
             {!isMobile && (
-              <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', gap: 3, mr: 'auto' }}>
-                  {navigationItems.map((item) => (
-                    <Button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      startIcon={item.icon}
-                      sx={{
-                        color: '#4A5D4A',
-                        fontWeight: 500,
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: 3,
-                        '&:hover': {
-                          bgcolor: '#E8F5E8',
-                          color: '#2E3B2E'
-                        }
-                      }}
-                    >
+              <Box sx={{
+                flexGrow: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: { md: 0.5, lg: 1 },
+                justifyContent: 'center'
+              }}>
+                {navigationItems.map((item) => (
+                  <Button
+                    key={item.label}
+                    onClick={() => navigate(item.path)}
+                    startIcon={item.icon}
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontWeight: 500,
+                      fontFamily: '"Inter", sans-serif',
+                      px: { md: 1.5, lg: 2.5 },
+                      py: 1,
+                      borderRadius: 2.5,
+                      textTransform: 'none',
+                      fontSize: { md: '0.85rem', lg: '0.95rem' },
+                      minWidth: 'auto',
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
+                  >
+                    <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>
                       {item.label}
-                    </Button>
-                  ))}
-                </Box>
+                    </Box>
+                  </Button>
+                ))}
 
                 {isAuthenticated ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+                    {/* Create Campaign Button */}
                     <Button
-                      variant="contained"
                       startIcon={<Add />}
                       onClick={() => navigate('/projects/create')}
                       sx={{
-                        background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
-                        borderRadius: 4,
-                        px: 4,
-                        py: 1.5,
+                        background: 'linear-gradient(135deg, #D4A574 0%, #C19660 100%)',
+                        borderRadius: 3,
+                        px: { md: 2, lg: 3 },
+                        py: 1.2,
                         fontWeight: 600,
+                        fontFamily: '"Inter", sans-serif',
+                        textTransform: 'none',
+                        fontSize: { md: '0.85rem', lg: '0.95rem' },
+                        boxShadow: '0 4px 16px rgba(212, 165, 116, 0.3)',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #00695C 0%, #00A86B 100%)',
+                          background: 'linear-gradient(135deg, #C19660 0%, #B8956A 100%)',
+                          boxShadow: '0 6px 20px rgba(212, 165, 116, 0.4)',
+                          transform: 'translateY(-2px)'
                         }
                       }}
                     >
-                      Start Campaign
+                      <Box component="span" sx={{ display: { md: 'none', lg: 'inline' } }}>
+                        Start Campaign
+                      </Box>
+                      <Box component="span" sx={{ display: { md: 'inline', lg: 'none' } }}>
+                        Start
+                      </Box>
                     </Button>
 
-                    <IconButton onClick={handleMenu} sx={{ p: 0 }}>
+                    {/* User Menu */}
+                    <IconButton
+                      size="large"
+                      onClick={handleMenu}
+                      color="inherit"
+                      sx={{ ml: 1 }}
+                    >
                       {user?.profile_picture ? (
-                        <Avatar src={user.profile_picture} sx={{ width: 40, height: 40 }} />
+                        <Avatar src={user.profile_picture} sx={{ width: 35, height: 35 }} />
                       ) : (
-                        <Avatar sx={{ width: 40, height: 40, bgcolor: '#00A86B' }}>
+                        <Avatar sx={{ width: 35, height: 35, bgcolor: '#D4A574' }}>
                           {user?.first_name?.[0] || <AccountCircle />}
                         </Avatar>
                       )}
@@ -204,60 +237,85 @@ const Navigation = () => {
                       open={Boolean(anchorEl)}
                       onClose={handleClose}
                       PaperProps={{
-                        elevation: 16,
                         sx: {
-                          mt: 2,
-                          borderRadius: 3,
-                          minWidth: 220,
-                          border: '1px solid #E8F5E8',
-                          boxShadow: '0 8px 32px rgba(0, 168, 107, 0.15)'
+                          mt: 1.5,
+                          minWidth: 200,
+                          borderRadius: 2,
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
                         }
                       }}
                     >
-                      <MenuItem onClick={() => { handleClose(); navigate('/dashboard'); }} sx={{ py: 2 }}>
-                        <Dashboard sx={{ mr: 2, color: '#00A86B' }} />
+                      <MenuItem
+                        onClick={() => { handleClose(); navigate('/dashboard'); }}
+                        sx={{
+                          py: 1.5,
+                          fontFamily: '"Inter", sans-serif',
+                          '&:hover': { bgcolor: 'rgba(44, 62, 45, 0.05)' }
+                        }}
+                      >
+                        <Dashboard sx={{ mr: 2 }} />
                         Dashboard
                       </MenuItem>
-                      <MenuItem onClick={() => { handleClose(); navigate('/profile'); }} sx={{ py: 2 }}>
-                        <Person sx={{ mr: 2, color: '#00A86B' }} />
+                      <MenuItem
+                        onClick={() => { handleClose(); navigate('/profile'); }}
+                        sx={{
+                          py: 1.5,
+                          fontFamily: '"Inter", sans-serif',
+                          '&:hover': { bgcolor: 'rgba(44, 62, 45, 0.05)' }
+                        }}
+                      >
+                        <ManageAccounts sx={{ mr: 2 }} />
                         Profile
                       </MenuItem>
                       <Divider />
-                      <MenuItem onClick={handleLogout} sx={{ py: 2 }}>
-                        <ExitToApp sx={{ mr: 2, color: '#EF5350' }} />
+                      <MenuItem
+                        onClick={handleLogout}
+                        sx={{
+                          py: 1.5,
+                          fontFamily: '"Inter", sans-serif',
+                          color: 'error.main',
+                          '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.05)' }
+                        }}
+                      >
+                        <ExitToApp sx={{ mr: 2 }} />
                         Sign Out
                       </MenuItem>
                     </Menu>
                   </Box>
                 ) : (
-                  <Box sx={{ display: 'flex', gap: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
                     <Button
                       onClick={() => navigate('/login')}
                       sx={{
-                        color: '#4A5D4A',
+                        color: 'rgba(255, 255, 255, 0.9)',
                         fontWeight: 500,
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: 3,
+                        fontFamily: '"Inter", sans-serif',
+                        px: { md: 1.5, lg: 2.5 },
+                        py: 1,
+                        borderRadius: 2.5,
+                        textTransform: 'none',
                         '&:hover': {
-                          bgcolor: '#E8F5E8',
-                          color: '#2E3B2E'
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                          color: 'white'
                         }
                       }}
                     >
                       Sign In
                     </Button>
                     <Button
-                      variant="contained"
                       onClick={() => navigate('/register')}
                       sx={{
-                        background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
-                        borderRadius: 4,
-                        px: 4,
-                        py: 1.5,
+                        background: 'linear-gradient(135deg, #D4A574 0%, #C19660 100%)',
+                        borderRadius: 3,
+                        px: { md: 2, lg: 3 },
+                        py: 1.2,
                         fontWeight: 600,
+                        fontFamily: '"Inter", sans-serif',
+                        textTransform: 'none',
+                        boxShadow: '0 4px 16px rgba(212, 165, 116, 0.3)',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #00695C 0%, #00A86B 100%)',
+                          background: 'linear-gradient(135deg, #C19660 0%, #B8956A 100%)',
+                          boxShadow: '0 6px 20px rgba(212, 165, 116, 0.4)'
                         }
                       }}
                     >
@@ -271,9 +329,9 @@ const Navigation = () => {
             {/* Mobile Menu Button */}
             {isMobile && (
               <IconButton
-                edge="end"
+                color="inherit"
                 onClick={handleMobileMenuToggle}
-                sx={{ color: '#2E3B2E' }}
+                sx={{ ml: 'auto' }}
               >
                 <MenuIcon />
               </IconButton>
@@ -282,125 +340,131 @@ const Navigation = () => {
         </Container>
       </AppBar>
 
-      {/* Mobile Drawer */}
+      {/* Enhanced Mobile Drawer */}
       <Drawer
         anchor="right"
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         PaperProps={{
           sx: {
-            width: 300,
-            bgcolor: '#F8FDF8'
+            width: { xs: '100%', sm: 320 },
+            background: 'linear-gradient(135deg, #F8F6F3 0%, #FEFEFE 100%)',
+            borderTopLeftRadius: { xs: 0, sm: 20 },
+            borderBottomLeftRadius: { xs: 0, sm: 20 }
           }
         }}
       >
-        <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" fontWeight="bold" color="#2E3B2E">
-            Menu
-          </Typography>
-          <IconButton onClick={() => setMobileMenuOpen(false)}>
-            <Close sx={{ color: '#2E3B2E' }} />
-          </IconButton>
+        <Box sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#2C3E2D' }}>
+              Menu
+            </Typography>
+            <IconButton onClick={() => setMobileMenuOpen(false)}>
+              <Close />
+            </IconButton>
+          </Box>
+
+          <List sx={{ p: 0 }}>
+            {navigationItems.map((item) => (
+              <ListItem
+                button
+                key={item.label}
+                onClick={() => {
+                  navigate(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                sx={{
+                  borderRadius: 3,
+                  mb: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(44, 62, 45, 0.05)'
+                  }
+                }}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.label} />
+              </ListItem>
+            ))}
+
+            {isAuthenticated && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <ListItem
+                  button
+                  onClick={() => {
+                    navigate('/projects/create');
+                    setMobileMenuOpen(false);
+                  }}
+                  sx={{
+                    borderRadius: 3,
+                    mb: 1,
+                    bgcolor: 'rgba(212, 165, 116, 0.1)',
+                    '&:hover': {
+                      bgcolor: 'rgba(212, 165, 116, 0.2)'
+                    }
+                  }}
+                >
+                  <ListItemIcon><Add /></ListItemIcon>
+                  <ListItemText primary="Start Campaign" />
+                </ListItem>
+                <ListItem
+                  button
+                  onClick={handleLogout}
+                  sx={{
+                    borderRadius: 3,
+                    color: 'error.main',
+                    '&:hover': {
+                      bgcolor: 'rgba(211, 47, 47, 0.05)'
+                    }
+                  }}
+                >
+                  <ListItemIcon><ExitToApp color="error" /></ListItemIcon>
+                  <ListItemText primary="Sign Out" />
+                </ListItem>
+              </>
+            )}
+
+            {!isAuthenticated && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <ListItem
+                  button
+                  onClick={() => {
+                    navigate('/login');
+                    setMobileMenuOpen(false);
+                  }}
+                  sx={{
+                    borderRadius: 3,
+                    mb: 1,
+                    '&:hover': {
+                      bgcolor: 'rgba(44, 62, 45, 0.05)'
+                    }
+                  }}
+                >
+                  <ListItemIcon><Person /></ListItemIcon>
+                  <ListItemText primary="Sign In" />
+                </ListItem>
+                <ListItem
+                  button
+                  onClick={() => {
+                    navigate('/register');
+                    setMobileMenuOpen(false);
+                  }}
+                  sx={{
+                    borderRadius: 3,
+                    bgcolor: 'rgba(212, 165, 116, 0.1)',
+                    '&:hover': {
+                      bgcolor: 'rgba(212, 165, 116, 0.2)'
+                    }
+                  }}
+                >
+                  <ListItemIcon><Add /></ListItemIcon>
+                  <ListItemText primary="Join Us" />
+                </ListItem>
+              </>
+            )}
+          </List>
         </Box>
-
-        <Divider sx={{ borderColor: '#E8F5E8' }} />
-
-        <List sx={{ px: 2 }}>
-          {navigationItems.map((item) => (
-            <ListItem
-              button
-              key={item.path}
-              onClick={() => {
-                navigate(item.path);
-                setMobileMenuOpen(false);
-              }}
-              sx={{
-                borderRadius: 3,
-                mb: 1,
-                '&:hover': {
-                  bgcolor: '#E8F5E8'
-                }
-              }}
-            >
-              <ListItemIcon sx={{ color: '#00A86B' }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} sx={{ color: '#2E3B2E' }} />
-            </ListItem>
-          ))}
-
-          {isAuthenticated && (
-            <>
-              <Divider sx={{ my: 2, borderColor: '#E8F5E8' }} />
-              <ListItem
-                button
-                onClick={() => {
-                  navigate('/projects/create');
-                  setMobileMenuOpen(false);
-                }}
-                sx={{
-                  borderRadius: 3,
-                  mb: 1,
-                  '&:hover': {
-                    bgcolor: '#E8F5E8'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ color: '#00A86B' }}><Add /></ListItemIcon>
-                <ListItemText primary="Start Campaign" sx={{ color: '#2E3B2E' }} />
-              </ListItem>
-
-              <ListItem
-                button
-                onClick={handleLogout}
-                sx={{
-                  borderRadius: 3,
-                  '&:hover': {
-                    bgcolor: '#E8F5E8'
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ color: '#EF5350' }}><ExitToApp /></ListItemIcon>
-                <ListItemText primary="Sign Out" sx={{ color: '#2E3B2E' }} />
-              </ListItem>
-            </>
-          )}
-
-          {!isAuthenticated && (
-            <>
-              <Divider sx={{ my: 2, borderColor: '#E8F5E8' }} />
-              <ListItem
-                button
-                onClick={() => {
-                  navigate('/login');
-                  setMobileMenuOpen(false);
-                }}
-                sx={{
-                  borderRadius: 3,
-                  mb: 1,
-                  '&:hover': {
-                    bgcolor: '#E8F5E8'
-                  }
-                }}
-              >
-                <ListItemText primary="Sign In" sx={{ color: '#2E3B2E' }} />
-              </ListItem>
-              <ListItem
-                button
-                onClick={() => {
-                  navigate('/register');
-                  setMobileMenuOpen(false);
-                }}
-                sx={{
-                  borderRadius: 3,
-                  '&:hover': {
-                    bgcolor: '#E8F5E8'
-                  }
-                }}
-              >
-                <ListItemText primary="Join Us" sx={{ color: '#2E3B2E' }} />
-              </ListItem>
-            </>
-          )}
-        </List>
       </Drawer>
     </>
   );

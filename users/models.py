@@ -1,17 +1,18 @@
+# users/models.py - UPDATED VERSION
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import RegexValidator
 from django.urls import reverse
+from .managers import CustomUserManager  # Import the custom manager
 
 
 class User(AbstractUser):
-    # Egyptian phone validator (PDF requirement [1])
+    # Egyptian phone validator
     egyptian_phone_validator = RegexValidator(
         regex=r'^01[0125][0-9]{8}$',
         message="Enter a valid Egyptian phone number (e.g., 01XXXXXXXXX)."
     )
 
-    # FIXED: Changed from mobile_phone to phone_number to match serializer
     phone_number = models.CharField(
         max_length=15,
         unique=True,
@@ -37,9 +38,12 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # FIXED: Use custom manager
+    objects = CustomUserManager()
+
     # FIXED: Set email as username field for authentication
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['first_name', 'last_name']  # Removed 'username'
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.email})"

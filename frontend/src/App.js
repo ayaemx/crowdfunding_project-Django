@@ -14,10 +14,9 @@ import Register from './pages/Register';
 import ProjectList from './pages/ProjectList';
 import ProjectDetail from './pages/ProjectDetail';
 import CreateProject from './pages/CreateProject';
-import EditProject from './pages/EditProject'; // NEW
-import Dashboard from './pages/Dashboard';
+import EditProject from './pages/EditProject';
+import Dashboard from './pages/Dashboard'; // This is your updated dashboard with campaign management
 import Profile from './pages/Profile';
-
 import testDjangoConnection from './utils/testConnection';
 import './styles/arabic-calligraphy.css';
 
@@ -31,42 +30,42 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <div className="App">
-            <Navigation />
-            <main>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Homepage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/projects" element={<ProjectList />} />
-                <Route path="/projects/:id" element={<ProjectDetail />} />
-                <Route path="/categories/:slug" element={<ProjectList />} />
+          <Navigation />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Homepage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/projects" element={<ProjectList />} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
 
-                {/* Protected Routes */}
-                <Route path="/projects/create" element={
-                  <ProtectedRoute>
-                    <CreateProject />
-                  </ProtectedRoute>
-                } />
-                <Route path="/projects/:id/edit" element={
-                  <ProtectedRoute>
-                    <EditProject />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </main>
-          </div>
+            {/* Protected Routes */}
+            <Route path="/projects/create" element={
+              <ProtectedRoute>
+                <CreateProject />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/:id/edit" element={
+              <ProtectedRoute>
+                <EditProject />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/personalized" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+          </Routes>
         </Router>
       </AuthProvider>
     </ThemeProvider>

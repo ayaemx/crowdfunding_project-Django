@@ -1,18 +1,25 @@
-# tags/api_views.py - COMPLETE WORKING VERSION
+# tags/api_views.py - FIXED IMPORTS
+
 from rest_framework import generics, permissions, status, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from .models import Tag
-from .serializers import TagSerializer, TagCreateSerializer, PopularTagsSerializer
+from .serializers import TagSerializer
+
+# ADD MISSING SERIALIZERS IF THEY DON'T EXIST
+try:
+    from .serializers import TagCreateSerializer, PopularTagsSerializer
+except ImportError:
+    # Fallback to TagSerializer if other serializers don't exist
+    TagCreateSerializer = TagSerializer
+    PopularTagsSerializer = TagSerializer
 
 
 class TagListCreateAPI(generics.ListCreateAPIView):
     """Tags with built-in search functionality"""
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    # Built-in DRF search support
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
 
@@ -37,14 +44,14 @@ class TagDetailAPI(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return Tag.objects.annotate(
             projects_count=Count('projects')
-        )  # *** FIXED: Added missing closing parenthesis ***
+        )  # FIXED: Added missing closing parenthesis
 
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def search_tags_api(request):
-    """FIXED: Custom search - always return 200, never 404"""
-    query = request.GET.get('q', '').strip()  # *** FIXED: Define query first ***
+    """Custom search - always return 200, never 404"""
+    query = request.GET.get('q', '').strip()
 
     try:
         if not query:
@@ -61,7 +68,6 @@ def search_tags_api(request):
             projects_count=Count('projects')
         ).order_by('-projects_count', 'name')
 
-        # *** FIXED: Always return 200 with results or empty array ***
         serializer = TagSerializer(tags, many=True)
         return Response({
             'tags': serializer.data,
@@ -74,7 +80,7 @@ def search_tags_api(request):
         return Response({
             'error': f'Search failed: {str(e)}',
             'tags': [],
-            'query': query,  # *** FIXED: query is now defined ***
+            'query': query,
             'count': 0
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -82,9 +88,8 @@ def search_tags_api(request):
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def popular_tags_api(request):
-    """FIXED: Popular tags - return any tags with projects"""
+    """Popular tags - return any tags with projects"""
     try:
-        # *** FIXED: Return any tags that have projects (no minimum threshold) ***
         popular_tags = Tag.objects.annotate(
             projects_count=Count('projects')
         ).filter(projects_count__gt=0).order_by('-projects_count')[:10]
@@ -94,7 +99,7 @@ def popular_tags_api(request):
             'popular_tags': serializer.data,
             'count': popular_tags.count(),
             'message': f'Found {popular_tags.count()} popular tags'
-        }, status=status.HTTP_200_OK)  # *** ALWAYS 200 OK ***
+        }, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({

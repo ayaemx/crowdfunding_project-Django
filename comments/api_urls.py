@@ -1,3 +1,5 @@
+# comments/api_urls.py - FIXED SYNTAX
+
 from django.urls import path
 from .api_views import ProjectCommentsListCreateAPI, CommentReportAPI
 

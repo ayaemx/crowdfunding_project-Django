@@ -13,7 +13,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem('access_token')); // FIXED: Use 'access_token'
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,13 +26,12 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data);
         } catch (error) {
           console.error('Failed to get user profile:', error);
-          localStorage.removeItem('token');
+          localStorage.removeItem('access_token'); // FIXED: Use 'access_token'
           setToken(null);
         }
       }
       setLoading(false);
     };
-
     initializeAuth();
   }, [token]);
 
@@ -52,7 +51,7 @@ export const AuthProvider = ({ children }) => {
       console.log('AuthContext: Storing token:', token); // Debug
       console.log('AuthContext: Setting user:', user); // Debug
 
-      localStorage.setItem('token', token); // Store as 'token'
+      localStorage.setItem('access_token', token); // FIXED: Store as 'access_token'
       setToken(token);
       setUser(user);
 
@@ -68,6 +67,15 @@ export const AuthProvider = ({ children }) => {
       console.log('AuthContext: Registering user with data:', userData);
       const response = await authAPI.register(userData);
       console.log('AuthContext: Registration response:', response);
+
+      // FIXED: Handle registration token storage
+      const { token, user } = response.data;
+      if (token) {
+        localStorage.setItem('access_token', token);
+        setToken(token);
+        setUser(user);
+      }
+
       return response;
     } catch (error) {
       console.error('AuthContext: Registration error:', error);
@@ -77,7 +85,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('access_token'); // FIXED: Use 'access_token'
     setToken(null);
     setUser(null);
   };

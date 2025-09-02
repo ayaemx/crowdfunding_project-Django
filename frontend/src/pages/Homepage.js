@@ -8,40 +8,113 @@ import {
   InputAdornment,
   Button,
   Chip,
-  IconButton,
   useMediaQuery,
   useTheme,
-  Fade,
-  Slide,
   Paper,
   Card,
   CardContent,
-  Avatar
+  Stack,
+  Avatar,
+  Divider
 } from '@mui/material';
 import {
   Search,
   Rocket,
-  Star,
   ArrowForward,
   VolunteerActivism,
-  People,
-  Add,
-  Person
+  TrendingUp,
+  Timeline,
+  EmojiEvents,
+  LocalOffer,
+  Favorite,
+  Groups,
+  AutoAwesome,
+  Star,
+  TrendingUpOutlined
 } from '@mui/icons-material';
-// REMOVED: CardMedia, TrendingUp, AccessTime (unused imports)
-
+import { motion } from 'framer-motion';
 import { projectsAPI, categoriesAPI } from '../services/api';
 import ProjectCard from '../components/ProjectCard';
 import { useNavigate } from 'react-router-dom';
 
+// Elegant floating elements inspired by Arnica
+const MinimalFloatingElements = () => {
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+        zIndex: 1,
+        opacity: 0.4
+      }}
+    >
+      {/* Gentle floating circles */}
+      {[...Array(8)].map((_, i) => (
+        <motion.div
+          key={`circle-${i}`}
+          style={{
+            position: 'absolute',
+            width: Math.random() * 40 + 20,
+            height: Math.random() * 40 + 20,
+            borderRadius: '50%',
+            background: `linear-gradient(135deg, rgba(44, 62, 45, 0.1) 0%, rgba(74, 107, 77, 0.05) 100%)`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -15, 0],
+            x: [0, Math.random() * 10 - 5, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            duration: Math.random() * 4 + 3,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+
+      {/* Subtle leaf-like shapes */}
+      {[...Array(4)].map((_, i) => (
+        <motion.div
+          key={`leaf-${i}`}
+          style={{
+            position: 'absolute',
+            width: 30,
+            height: 15,
+            borderRadius: '50% 0',
+            background: 'rgba(44, 62, 45, 0.08)',
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            rotate: [0, 360],
+            y: [0, -10, 0],
+          }}
+          transition={{
+            duration: Math.random() * 8 + 6,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+      ))}
+    </Box>
+  );
+};
+
 const Homepage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
   const [homepageData, setHomepageData] = useState(null);
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [latestPage, setLatestPage] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,10 +124,8 @@ const Homepage = () => {
           projectsAPI.getHomepageData(),
           categoriesAPI.getAll()
         ]);
-
         setHomepageData(homepageResponse.data);
         setCategories(categoriesResponse.data);
-
       } catch (error) {
         console.error('Failed to load homepage data:', error);
         setHomepageData({ top_rated: [], latest: [], featured: [] });
@@ -63,574 +134,568 @@ const Homepage = () => {
         setLoading(false);
       }
     };
-
     loadData();
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/projects?search=${searchQuery}`);
-    }
-  };
+ const handleSearch = (e) => {
+  e.preventDefault();
+  if (searchQuery.trim()) {
+    // ADDED: Track search activity
+    console.log('🔍 Tracking search query:', searchQuery);
 
-  const handleProjectClick = (projectId) => {
-    navigate(`/projects/${projectId}`);
-  };
+    // Track search via API call
+    fetch(`http://127.0.0.1:8000/api/projects/?search=${encodeURIComponent(searchQuery)}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    }).then(() => {
+      console.log('✅ Search activity tracked successfully');
+    }).catch((error) => {
+      console.log('⚠️ Search tracking failed:', error);
+    });
 
-  const getLatestProjectsPage = () => {
-    const projects = homepageData?.latest || [];
-    const startIndex = latestPage * 3;
-    return projects.slice(startIndex, startIndex + 3);
-  };
-
-  const getTotalLatestPages = () => {
-    const projects = homepageData?.latest || [];
-    return Math.ceil(projects.length / 3);
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      minimumFractionDigits: 0,
-    }).format(amount).replace('EGP', 'EGP');
-  };
-
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return '/placeholder-project.jpg';
-    if (imagePath.startsWith('http')) return imagePath;
-    return `http://127.0.0.1:8000${imagePath}`;
-  };
+    navigate(`/projects?search=${searchQuery}`);
+  }
+};
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h6" color="#4A5D4A">Loading...</Typography>
-      </Container>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '60vh',
+        background: 'linear-gradient(135deg, #FEFEFE 0%, #F8F6F3 100%)'
+      }}>
+        <Typography variant="h6" sx={{
+          color: '#2C3E2D',
+          fontFamily: '"Inter", sans-serif',
+          fontWeight: 500
+        }}>
+          Loading amazing projects...
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <Box sx={{ bgcolor: '#F8FDF8', minHeight: '100vh' }}>
-      {/* Enhanced Hero Section */}
+    <Box sx={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #FEFEFE 0%, #F8F6F3 50%, #F5F2EE 100%)'
+    }}>
+      {/* COMPACT HERO SECTION - Much Shorter */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
+          background: 'linear-gradient(135deg, #2C3E2D 0%, #3D5A3F 50%, #4A6B4D 100%)',
           color: 'white',
-          py: { xs: 6, md: 8 },
+          py: { xs: 3, md: 4 }, // MUCH SMALLER
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          minHeight: { xs: '40vh', md: '45vh' }, // MUCH SHORTER
         }}
       >
-        {/* Background Pattern */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `
-              radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%)
-            `,
-            animation: 'float 6s ease-in-out infinite'
-          }}
-        />
+        <MinimalFloatingElements />
 
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Grid container spacing={4} alignItems="center">
-            {/* Left Side - Content */}
-            <Grid xs={12} md={6}>
-              <Fade in timeout={1000}>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Box sx={{
-                      bgcolor: 'rgba(255,255,255,0.2)',
-                      borderRadius: 3,
-                      p: 1.5,
-                      mr: 2,
-                      backdropFilter: 'blur(10px)'
-                    }}>
-                      <VolunteerActivism sx={{ fontSize: 32 }} />
-                    </Box>
-                    <Typography variant="h6" sx={{ opacity: 0.9, fontFamily: '"Cairo", sans-serif' }}>
-                      الخير فينا جميعاً
-                    </Typography>
-                  </Box>
-
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+          <Grid container spacing={2} alignItems="center" justifyContent="center">
+            {/* Centered Content - More Compact */}
+            <Grid item xs={12} md={10} lg={8}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
-                    variant={isMobile ? "h3" : "h2"}
-                    fontWeight="bold"
-                    gutterBottom
-                    sx={{ mb: 2, lineHeight: 1.2 }}
-                  >
-                    Fund Dreams,
-                    <br />
-                    Build Tomorrow
-                  </Typography>
-
-                  <Typography
-                    variant="h6"
-                    sx={{ mb: 4, opacity: 0.9, fontWeight: 300, lineHeight: 1.5 }}
-                  >
-                    Join Egypt's most trusted crowdfunding platform.
-                    Turn innovative ideas into reality with community support.
-                  </Typography>
-
-                  {/* Enhanced CTA Buttons */}
-                  <Box sx={{ display: 'flex', gap: 3, flexDirection: isMobile ? 'column' : 'row' }}>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      startIcon={<Add />}
-                      onClick={() => navigate('/projects/create')}
-                      sx={{
-                        bgcolor: 'white',
-                        color: '#00A86B',
-                        fontWeight: 'bold',
-                        px: 5,
-                        py: 2,
-                        borderRadius: 4,
-                        fontSize: '1.1rem',
-                        boxShadow: '0 8px 24px rgba(255,255,255,0.3)',
-                        border: '2px solid transparent',
-                        '&:hover': {
-                          bgcolor: '#F8FDF8',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 12px 32px rgba(255,255,255,0.4)'
-                        }
-                      }}
-                    >
-                      Start Your Campaign Now
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      onClick={() => navigate('/projects')}
-                      sx={{
-                        borderColor: 'white',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        px: 4,
-                        py: 2,
-                        borderRadius: 4,
-                        fontSize: '1.1rem',
-                        borderWidth: '2px',
-                        '&:hover': {
-                          bgcolor: 'rgba(255,255,255,0.1)',
-                          borderColor: 'white',
-                          borderWidth: '2px',
-                          transform: 'translateY(-2px)'
-                        }
-                      }}
-                    >
-                      Explore Projects
-                    </Button>
-                  </Box>
-                </Box>
-              </Fade>
-            </Grid>
-
-            {/* Right Side - Search & Stats */}
-            <Grid xs={12} md={6}>
-              <Fade in timeout={1200}>
-                <Box>
-                  {/* Search Bar */}
-                  <Paper
-                    component="form"
-                    onSubmit={handleSearch}
-                    elevation={12}
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      p: 1.5,
-                      borderRadius: 5,
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(20px)',
-                      mb: 4,
-                      boxShadow: '0 8px 32px rgba(0, 168, 107, 0.2)'
+                      fontFamily: '"Inter", sans-serif',
+                      fontWeight: 800,
+                      fontSize: { xs: '1.8rem', md: '2.4rem' }, // SMALLER
+                      lineHeight: 1.2,
+                      mb: 1.5, // REDUCED margin
+                      color: 'white',
                     }}
                   >
-                    <TextField
-                      fullWidth
-                      placeholder="Search for meaningful projects..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      variant="standard"
-                      InputProps={{
-                        disableUnderline: true,
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Search sx={{ color: '#00A86B', ml: 1, fontSize: '1.5rem' }} />
-                          </InputAdornment>
-                        ),
-                        sx: { px: 2, py: 1.5, color: '#2E3B2E', fontSize: '1.1rem' }
-                      }}
-                    />
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      sx={{
-                        background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
-                        borderRadius: 4,
-                        px: 4,
-                        py: 1.5,
-                        minWidth: 'auto'
-                      }}
-                    >
-                      <ArrowForward sx={{ fontSize: '1.3rem' }} />
-                    </Button>
-                  </Paper>
+                    Fund Dreams,{' '}
+                    <Box component="span" sx={{
+                      background: 'linear-gradient(45deg, #D4A574 30%, #E8C4A0 90%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontWeight: 900
+                    }}>
+                      Build Future
+                    </Box>
+                  </Typography>
 
-                  {/* Quick Stats */}
-                  <Grid container spacing={3}>
-                    <Grid xs={4}>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h3" fontWeight="bold">
-                          {homepageData?.latest?.length || 5}+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontFamily: '"Inter", sans-serif',
+                      fontWeight: 400,
+                      mb: 2.5, // REDUCED margin
+                      opacity: 0.95,
+                      fontSize: { xs: '1rem', md: '1.1rem' }, // SMALLER text
+                      lineHeight: 1.5,
+                      maxWidth: '500px', // NARROWER
+                      mx: 'auto'
+                    }}
+                  >
+                    Join Egypt's most trusted crowdfunding platform where innovation meets community support.
+                  </Typography>
+
+                  {/* Compact CTA Buttons */}
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={2}
+                    justifyContent="center"
+                    sx={{ mb: 2 }} // REDUCED margin
+                  >
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        variant="contained"
+                        size="medium" // SMALLER size
+                        startIcon={<Rocket />}
+                        onClick={() => navigate('/projects/create')}
+                        sx={{
+                          background: 'linear-gradient(135deg, #D4A574 0%, #C19660 100%)',
+                          color: 'white',
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 700,
+                          px: 3, // REDUCED padding
+                          py: 1.2,
+                          borderRadius: 3,
+                          fontSize: '0.95rem', // SMALLER font
+                          textTransform: 'none',
+                          boxShadow: '0 4px 16px rgba(212, 165, 116, 0.3)',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #C19660 0%, #B8956A 100%)',
+                            boxShadow: '0 6px 20px rgba(212, 165, 116, 0.4)'
+                          }
+                        }}
+                      >
+                        Start Campaign
+                      </Button>
+                    </motion.div>
+
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        variant="outlined"
+                        size="medium" // SMALLER size
+                        startIcon={<Search />}
+                        onClick={() => navigate('/projects')}
+                        sx={{
+                          borderColor: 'rgba(255,255,255,0.8)',
+                          color: 'white',
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 700,
+                          px: 3, // REDUCED padding
+                          py: 1.2,
+                          borderRadius: 3,
+                          fontSize: '0.95rem', // SMALLER font
+                          textTransform: 'none',
+                          borderWidth: '1.5px',
+                          '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.1)',
+                            borderColor: 'white',
+                            borderWidth: '1.5px'
+                          }
+                        }}
+                      >
+                        Explore Projects
+                      </Button>
+                    </motion.div>
+                  </Stack>
+
+                  {/* Compact Stats */}
+                  <Grid container spacing={2} justifyContent="center" sx={{ mt: 1 }}> {/* REDUCED spacing and margin */}
+                    <Grid item xs={4} sm={2}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Typography variant="h6" sx={{ // SMALLER stats
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 700,
+                          mb: 0.2,
+                          fontSize: '1.2rem' // SMALLER
+                        }}>
+                          {homepageData?.latest?.length || 12}+
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                          Active Projects
+                        <Typography variant="caption" sx={{
+                          opacity: 0.9,
+                          fontSize: '0.75rem' // SMALLER
+                        }}>
+                          Projects
                         </Typography>
-                      </Box>
+                      </motion.div>
                     </Grid>
-                    <Grid xs={4}>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h3" fontWeight="bold">
+                    <Grid item xs={4} sm={2}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <Typography variant="h6" sx={{
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 700,
+                          mb: 0.2,
+                          fontSize: '1.2rem' // SMALLER
+                        }}>
                           50K+
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        <Typography variant="caption" sx={{
+                          opacity: 0.9,
+                          fontSize: '0.75rem' // SMALLER
+                        }}>
                           Supporters
                         </Typography>
-                      </Box>
+                      </motion.div>
                     </Grid>
-                    <Grid xs={4}>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h3" fontWeight="bold">
+                    <Grid item xs={4} sm={2}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.7 }}
+                      >
+                        <Typography variant="h6" sx={{
+                          fontFamily: '"Inter", sans-serif',
+                          fontWeight: 700,
+                          mb: 0.2,
+                          fontSize: '1.2rem' // SMALLER
+                        }}>
                           2M+
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        <Typography variant="caption" sx={{
+                          opacity: 0.9,
+                          fontSize: '0.75rem' // SMALLER
+                        }}>
                           EGP Raised
                         </Typography>
-                      </Box>
+                      </motion.div>
                     </Grid>
                   </Grid>
                 </Box>
-              </Fade>
+              </motion.div>
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
-        {/* Top Rated Projects */}
-        {homepageData?.top_rated?.length > 0 && (
-          <Slide direction="up" in timeout={800}>
-            <Box sx={{ mb: 12 }}>
-              <Box sx={{ textAlign: 'center', mb: 6 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                  <Star sx={{ color: '#FFB300', fontSize: 40, mr: 2 }} />
-                  <Typography variant={isMobile ? "h4" : "h3"} fontWeight="bold" color="#2E3B2E">
-                    Most Trusted Campaigns
-                  </Typography>
-                </Box>
-                <Typography variant="h6" color="#4A5D4A" sx={{ maxWidth: 600, mx: 'auto' }}>
-                  Projects that have earned the trust and support of our community
+      {/* ENHANCED: Featured Projects Section */}
+      {homepageData?.top_rated?.length > 0 && (
+        <Container maxWidth="lg" sx={{ py: 6 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 5 }}>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 800,
+                  color: '#2C3E2D',
+                  mb: 2,
+                  fontSize: { xs: '1.8rem', md: '2.2rem' }
+                }}
+              >
+                <EmojiEvents sx={{ fontSize: 'inherit', color: '#D4A574', mr: 2 }} />
+                Most Trusted Campaigns
+              </Typography>
+              <Typography variant="h6" sx={{
+                color: '#5A6B5D',
+                maxWidth: 600,
+                mx: 'auto',
+                fontFamily: '"Inter", sans-serif'
+              }}>
+                Projects that have earned the trust and support of our community
+              </Typography>
+            </Box>
+
+            <Grid container spacing={3}>
+              {homepageData.top_rated.slice(0, 3).map((project, index) => (
+                <Grid item xs={12} sm={6} lg={4} key={project.id}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <ProjectCard
+                      project={project}
+                      variant="featured"
+                    />
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </motion.div>
+        </Container>
+      )}
+
+      {/* ENHANCED: Latest Projects Section */}
+      {homepageData?.latest?.length > 0 && (
+        <Box sx={{ backgroundColor: 'rgba(248, 246, 243, 0.6)', py: 6 }}>
+          <Container maxWidth="lg">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <Box sx={{ textAlign: 'center', mb: 5 }}>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontFamily: '"Inter", sans-serif',
+                    fontWeight: 800,
+                    color: '#2C3E2D',
+                    mb: 2,
+                    fontSize: { xs: '1.8rem', md: '2.2rem' }
+                  }}
+                >
+                  <Timeline sx={{ fontSize: 'inherit', color: '#4A6B4D', mr: 2 }} />
+                  Fresh Starts
+                </Typography>
+                <Typography variant="h6" sx={{
+                  color: '#5A6B5D',
+                  maxWidth: 600,
+                  mx: 'auto',
+                  fontFamily: '"Inter", sans-serif'
+                }}>
+                  New campaigns just beginning their journey to success
                 </Typography>
               </Box>
 
-              <Box sx={{
-                display: 'flex',
-                gap: 3,
-                overflowX: 'auto',
-                pb: 2,
-                '&::-webkit-scrollbar': { height: 8 },
-                '&::-webkit-scrollbar-track': { bgcolor: '#E8F5E8', borderRadius: 4 },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
-                  borderRadius: 4
-                }
-              }}>
-                {homepageData.top_rated.slice(0, 5).map((project, index) => (
-                  <Fade in timeout={1000 + index * 200} key={project.id}>
-                    <Box sx={{ minWidth: { xs: 300, sm: 350 }, maxWidth: { xs: 300, sm: 350 } }}>
+              <Grid container spacing={3}>
+                {homepageData.latest.slice(0, 6).map((project, index) => (
+                  <Grid item xs={12} sm={6} lg={4} key={project.id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      viewport={{ once: true }}
+                    >
                       <ProjectCard
                         project={project}
-                        onClick={() => handleProjectClick(project.id)}
-                        variant="standard"
+                        variant="latest"
                       />
-                    </Box>
-                  </Fade>
-                ))}
-              </Box>
-            </Box>
-          </Slide>
-        )}
-
-        {/* Fresh Starts - COMPLETELY REDESIGNED */}
-        {homepageData?.latest?.length > 0 && (
-          <Slide direction="up" in timeout={1000}>
-            <Box sx={{ mb: 12 }}>
-              <Box sx={{ textAlign: 'center', mb: 6 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                  <Rocket sx={{ color: '#4CAF50', fontSize: 40, mr: 2 }} />
-                  <Typography variant={isMobile ? "h4" : "h3"} fontWeight="bold" color="#2E3B2E">
-                    Fresh Starts
-                  </Typography>
-                </Box>
-                <Typography variant="h6" color="#4A5D4A" sx={{ maxWidth: 600, mx: 'auto' }}>
-                  New campaigns just beginning their journey
-                </Typography>
-              </Box>
-
-              {/* Redesigned Fresh Starts Cards */}
-              <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-                {getLatestProjectsPage().map((project, index) => (
-                  <Fade in timeout={1200 + index * 200} key={project.id}>
-                    <Card
-                      sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
-                        mb: 3,
-                        borderRadius: 4,
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        border: '1px solid #E8F5E8',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: '0 12px 32px rgba(0, 168, 107, 0.15)',
-                          border: '1px solid #00A86B'
-                        }
-                      }}
-                      onClick={() => handleProjectClick(project.id)}
-                    >
-                      {/* Image Section - Fixed Size */}
-                      <Box
-                        sx={{
-                          width: { xs: '100%', md: 250 },
-                          height: { xs: 200, md: 180 },
-                          position: 'relative',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: '100%',
-                            height: '100%',
-                            backgroundImage: `url(${getImageUrl(project.pictures?.[0]?.image)})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': {
-                              transform: 'scale(1.05)'
-                            }
-                          }}
-                        />
-
-                        {/* NEW Badge */}
-                        <Chip
-                          label="NEW"
-                          size="small"
-                          sx={{
-                            position: 'absolute',
-                            top: 12,
-                            left: 12,
-                            bgcolor: '#4CAF50',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '0.75rem'
-                          }}
-                        />
-
-                        {/* Progress Badge */}
-                        <Chip
-                          label={`${((project.total_donations / project.total_target) * 100).toFixed(0)}%`}
-                          size="small"
-                          sx={{
-                            position: 'absolute',
-                            top: 12,
-                            right: 12,
-                            bgcolor: '#00A86B',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                      </Box>
-
-                      {/* Content Section */}
-                      <CardContent sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-                        {/* Header */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                          <Typography variant="h6" fontWeight="bold" color="#2E3B2E" sx={{ flex: 1, mr: 2 }}>
-                            {project.title}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Star sx={{ color: '#FFB300', fontSize: 16, mr: 0.5 }} />
-                            <Typography variant="body2" fontWeight="bold">
-                              {project.average_rating?.toFixed(1) || '0.0'}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        {/* Description */}
-                        <Typography variant="body2" color="#4A5D4A" sx={{ mb: 2, lineHeight: 1.5, flex: 1 }}>
-                          {project.details?.substring(0, 150)}...
-                        </Typography>
-
-                        {/* Author */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
-                            <Person fontSize="small" />
-                          </Avatar>
-                          <Typography variant="body2" color="#4A5D4A">
-                            by {project.user?.first_name} {project.user?.last_name}
-                          </Typography>
-                        </Box>
-
-                        {/* Stats and Action */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Box>
-                            <Typography variant="body2" fontWeight="bold" color="#00A86B">
-                              {formatCurrency(project.total_donations)} raised
-                            </Typography>
-                            <Typography variant="body2" color="#4A5D4A">
-                              of {formatCurrency(project.total_target)} goal
-                            </Typography>
-                          </Box>
-
-                          <Button
-                            variant="contained"
-                            size="medium"
-                            sx={{
-                              background: 'linear-gradient(135deg, #00A86B 0%, #26A69A 100%)',
-                              borderRadius: 3,
-                              px: 3,
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            Support Now
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Fade>
-                ))}
-              </Box>
-
-              {/* Pagination */}
-              {getTotalLatestPages() > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 1 }}>
-                  {Array.from({ length: getTotalLatestPages() }, (_, index) => (
-                    <IconButton
-                      key={index}
-                      onClick={() => setLatestPage(index)}
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        bgcolor: latestPage === index ? '#00A86B' : '#E8F5E8',
-                        '&:hover': { bgcolor: latestPage === index ? '#00695C' : '#C8E6C9' },
-                        borderRadius: '50%'
-                      }}
-                    />
-                  ))}
-                </Box>
-              )}
-            </Box>
-          </Slide>
-        )}
-
-        {/* Community Favorites - Standard Grid */}
-        {homepageData?.featured?.length > 0 && (
-          <Slide direction="up" in timeout={1200}>
-            <Box sx={{ mb: 10 }}>
-              <Box sx={{ textAlign: 'center', mb: 6 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                  <People sx={{ color: '#26A69A', fontSize: 40, mr: 2 }} />
-                  <Typography variant={isMobile ? "h4" : "h3"} fontWeight="bold" color="#2E3B2E">
-                    Community Favorites
-                  </Typography>
-                </Box>
-                <Typography variant="h6" color="#4A5D4A" sx={{ maxWidth: 600, mx: 'auto' }}>
-                  Exceptional projects making a real difference
-                </Typography>
-              </Box>
-
-              <Grid container spacing={4} justifyContent="center">
-                {homepageData.featured.slice(0, 3).map((project, index) => (
-                  <Grid xs={12} sm={6} md={4} key={project.id}>
-                    <Fade in timeout={1400 + index * 200}>
-                      <Box>
-                        <ProjectCard
-                          project={project}
-                          onClick={() => handleProjectClick(project.id)}
-                          variant="standard"
-                        />
-                      </Box>
-                    </Fade>
+                    </motion.div>
                   </Grid>
                 ))}
               </Grid>
-            </Box>
-          </Slide>
-        )}
 
-        {/* Categories */}
-        {categories.length > 0 && (
-          <Slide direction="up" in timeout={1400}>
-            <Box sx={{ mb: 8 }}>
-              <Typography variant={isMobile ? "h4" : "h3"} fontWeight="bold" gutterBottom align="center" color="#2E3B2E" sx={{ mb: 2 }}>
+              <Box sx={{ textAlign: 'center', mt: 5 }}>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    endIcon={<ArrowForward />}
+                    onClick={() => navigate('/projects')}
+                    sx={{
+                      borderColor: '#2C3E2D',
+                      color: '#2C3E2D',
+                      fontWeight: 700,
+                      fontFamily: '"Inter", sans-serif',
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 3,
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                      borderWidth: '2px',
+                      '&:hover': {
+                        bgcolor: '#2C3E2D',
+                        color: 'white',
+                        borderWidth: '2px'
+                      }
+                    }}
+                  >
+                    View All Projects
+                  </Button>
+                </motion.div>
+              </Box>
+            </motion.div>
+          </Container>
+        </Box>
+      )}
+
+      {/* ENHANCED: Categories Section */}
+      {categories.length > 0 && (
+        <Container maxWidth="lg" sx={{ py: 6 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 5 }}>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 800,
+                  color: '#2C3E2D',
+                  mb: 2,
+                  fontSize: { xs: '1.8rem', md: '2.2rem' }
+                }}
+              >
+                <LocalOffer sx={{ fontSize: 'inherit', color: '#D4A574', mr: 2 }} />
                 Explore Categories
               </Typography>
-              <Typography variant="h6" color="#4A5D4A" align="center" sx={{ mb: 6, maxWidth: 600, mx: 'auto' }}>
-                Find causes that resonate with your values
-              </Typography>
-
-              <Box sx={{
-                display: 'flex',
-                gap: 2,
-                flexWrap: 'wrap',
-                justifyContent: 'center'
+              <Typography variant="h6" sx={{
+                color: '#5A6B5D',
+                maxWidth: 600,
+                mx: 'auto',
+                fontFamily: '"Inter", sans-serif'
               }}>
-                {categories.map((category, index) => (
-                  <Fade in timeout={1600 + index * 100} key={category.id}>
-                    <Chip
-                      label={category.name}
-                      onClick={() => navigate(`/categories/${category.slug}`)}
+                Find causes and projects that resonate with your values
+              </Typography>
+            </Box>
+
+            <Grid container spacing={2}>
+              {categories.slice(0, 8).map((category, index) => (
+                <Grid item xs={6} sm={4} md={3} key={category.id}>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Card
                       sx={{
-                        fontSize: '1rem',
-                        py: 3,
-                        px: 4,
-                        bgcolor: '#E8F5E8',
-                        color: '#4A5D4A',
-                        borderRadius: 3,
+                        cursor: 'pointer',
                         transition: 'all 0.3s ease',
+                        borderRadius: 3,
+                        border: '1px solid #E8F4EA',
+                        background: 'rgba(255,255,255,0.8)',
                         '&:hover': {
-                          bgcolor: '#00A86B',
-                          color: 'white',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 8px 20px rgba(0, 168, 107, 0.25)'
+                          boxShadow: '0 8px 25px rgba(44, 62, 45, 0.15)',
+                          borderColor: '#2C3E2D',
+                          background: 'white'
                         }
                       }}
-                    />
-                  </Fade>
-                ))}
-              </Box>
-            </Box>
-          </Slide>
-        )}
-      </Container>
+                      onClick={() => navigate(`/categories/${category.slug}`)}
+                    >
+                      <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: '#2C3E2D',
+                            fontSize: '0.95rem',
+                            fontFamily: '"Inter", sans-serif'
+                          }}
+                        >
+                          {category.name}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </motion.div>
+        </Container>
+      )}
 
-      {/* CSS Animation */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-      `}</style>
+      {/* Call to Action Section */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #2C3E2D 0%, #3D5A3F 50%, #4A6B4D 100%)',
+          color: 'white',
+          py: 6,
+          textAlign: 'center'
+        }}
+      >
+        <Container maxWidth="md">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <Typography
+              variant="h3"
+              sx={{
+                fontFamily: '"Inter", sans-serif',
+                fontWeight: 800,
+                mb: 3,
+                fontSize: { xs: '1.8rem', md: '2.2rem' }
+              }}
+            >
+              Ready to Make a Difference?
+            </Typography>
+            <Typography variant="h6" sx={{
+              mb: 4,
+              opacity: 0.95,
+              fontFamily: '"Inter", sans-serif',
+              maxWidth: 500,
+              mx: 'auto'
+            }}>
+              Join thousands of creators and supporters who are turning ideas into reality
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} justifyContent="center">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<Rocket />}
+                  onClick={() => navigate('/projects/create')}
+                  sx={{
+                    background: 'linear-gradient(135deg, #D4A574 0%, #C19660 100%)',
+                    fontWeight: 700,
+                    fontFamily: '"Inter", sans-serif',
+                    px: 4,
+                    py: 2,
+                    borderRadius: 3,
+                    fontSize: '1.1rem',
+                    textTransform: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #C19660 0%, #B8956A 100%)'
+                    }
+                  }}
+                >
+                  Start Your Project
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<VolunteerActivism />}
+                  onClick={() => navigate('/projects')}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.8)',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontFamily: '"Inter", sans-serif',
+                    px: 4,
+                    py: 2,
+                    borderRadius: 3,
+                    fontSize: '1.1rem',
+                    textTransform: 'none',
+                    borderWidth: '2px',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                      borderWidth: '2px'
+                    }
+                  }}
+                >
+                  Support Projects
+                </Button>
+              </motion.div>
+            </Stack>
+          </motion.div>
+        </Container>
+      </Box>
     </Box>
   );
 };

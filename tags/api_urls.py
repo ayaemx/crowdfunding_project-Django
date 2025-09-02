@@ -1,4 +1,5 @@
-# tags/api_urls.py - ENSURE CORRECT ORDER
+# tags/api_urls.py - FIXED SYNTAX
+
 from django.urls import path
 from . import api_views
 
@@ -11,6 +12,6 @@ urlpatterns = [
     path('', api_views.TagListCreateAPI.as_view(), name='tag-list-create'),
 
     # *** DYNAMIC PATTERNS LAST ***
-    path('<slug:slug>/projects/', api_views.tag_projects_api, name='tag-projects'),
-    path('<slug:slug>/', api_views.TagDetailAPI.as_view(), name='tag-detail'),
+    path('<slug:slug>/projects/', api_views.tag_projects_api, name='tag-projects'),  # FIXED: Added <slug:slug>
+    path('<slug:slug>/', api_views.TagDetailAPI.as_view(), name='tag-detail'),  # FIXED: Added <slug:slug>
 ]

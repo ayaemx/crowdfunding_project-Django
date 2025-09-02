@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, IconButton, Paper } from '@mui/material';
+import { Box, IconButton, Paper, Typography } from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import { getImageUrl } from '../services/api';
 
@@ -8,8 +8,19 @@ const ImageSlider = ({ images = [] }) => {
 
   if (!images || images.length === 0) {
     return (
-      <Box sx={{ height: 400, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography>No images available</Typography>
+      <Box
+        sx={{
+          height: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'grey.100',
+          borderRadius: 2
+        }}
+      >
+        <Typography variant="h6" color="text.secondary">
+          No images available
+        </Typography>
       </Box>
     );
   }
@@ -22,16 +33,24 @@ const ImageSlider = ({ images = [] }) => {
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const currentImage = images[currentIndex];
+  const imageUrl = getImageUrl(currentImage?.image_url || currentImage?.image || currentImage);
+
   return (
-    <Box sx={{ position: 'relative', height: 400, borderRadius: 2, overflow: 'hidden' }}>
+    <Box sx={{ position: 'relative', width: '100%', height: 400 }}>
       {/* Main Image */}
-      <img
-        src={getImageUrl(images[currentIndex]?.image)}
+      <Paper
+        component="img"
+        src={imageUrl}
         alt={`Project image ${currentIndex + 1}`}
-        style={{
+        onError={(e) => {
+          e.target.src = '/placeholder-project.jpg';
+        }}
+        sx={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover'
+          objectFit: 'cover',
+          borderRadius: 2
         }}
       />
 
@@ -47,12 +66,13 @@ const ImageSlider = ({ images = [] }) => {
               transform: 'translateY(-50%)',
               bgcolor: 'rgba(0,0,0,0.5)',
               color: 'white',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.7)'
+              }
             }}
           >
             <ArrowBackIos />
           </IconButton>
-
           <IconButton
             onClick={nextImage}
             sx={{
@@ -62,7 +82,9 @@ const ImageSlider = ({ images = [] }) => {
               transform: 'translateY(-50%)',
               bgcolor: 'rgba(0,0,0,0.5)',
               color: 'white',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.7)'
+              }
             }}
           >
             <ArrowForwardIos />
@@ -72,14 +94,16 @@ const ImageSlider = ({ images = [] }) => {
 
       {/* Image Indicators */}
       {images.length > 1 && (
-        <Box sx={{
-          position: 'absolute',
-          bottom: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: 1
-        }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 1
+          }}
+        >
           {images.map((_, index) => (
             <Box
               key={index}

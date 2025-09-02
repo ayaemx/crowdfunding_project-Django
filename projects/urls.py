@@ -1,9 +1,17 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views, api_views
+
+# API Router
+router = DefaultRouter()
+router.register(r'projects', api_views.ProjectViewSet, basename='project')
 
 app_name = 'projects'
 
 urlpatterns = [
+    # API URLs
+    path('api/', include(router.urls)),
+
     # Template views for testing
     path('', views.project_list, name='project-list'),
     path('create/', views.project_create, name='project-add'),

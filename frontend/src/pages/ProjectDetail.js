@@ -1,283 +1,147 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
-  Grid,
   Typography,
   Box,
-  Button,
+  Grid,
   Card,
   CardContent,
-  LinearProgress,
+  Button,
   Chip,
+  LinearProgress,
   Avatar,
+  Divider,
+  Alert,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
   Rating,
-  IconButton,
-  useMediaQuery,
-  useTheme,
-  Menu,
-  MenuItem,
-  Divider
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText
 } from '@mui/material';
 import {
+  Share,
   Favorite,
-  FavoriteBorder,
-  Person,
-  Star,
-  Close,
-  ArrowBackIos,
-  ArrowForwardIos,
-  MoreVert,
-  Edit,
   Report,
-  Cancel
+  AttachMoney,
+  CalendarToday,
+  Person,
+  Comment
 } from '@mui/icons-material';
-import {
-  FacebookShareButton,
-  TwitterShareButton,
-  WhatsappShareButton,
-  FacebookIcon,
-  TwitterIcon,
-  WhatsappIcon
-} from 'react-share';
-import { projectsAPI } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import ProjectCard from '../components/ProjectCard';
-import CommentSection from '../components/CommentSection';
-import ReportModal from '../components/ReportModal';
-
-// Helper function to handle Django media URLs
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return '/placeholder-project.jpg';
-  if (imagePath.startsWith('http')) return imagePath;
-  return `http://127.0.0.1:8000${imagePath}`;
-};
-
-// Image Slider Component
-const ImageSlider = ({ images = [] }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  if (!images || images.length === 0) {
-    return (
-      <Box sx={{ height: 400, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 2 }}>
-        <Typography>No images available</Typography>
-      </Box>
-    );
-  }
-
-  const nextImage = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  return (
-    <Box sx={{ position: 'relative', height: 400, borderRadius: 2, overflow: 'hidden' }}>
-      <img
-        src={getImageUrl(images[currentIndex]?.image)}
-        alt={`Project image ${currentIndex + 1}`}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover'
-        }}
-      />
-
-      {images.length > 1 && (
-        <>
-          <IconButton
-            onClick={prevImage}
-            sx={{
-              position: 'absolute',
-              left: 16,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              bgcolor: 'rgba(0,0,0,0.5)',
-              color: 'white',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
-            }}
-          >
-            <ArrowBackIos />
-          </IconButton>
-
-          <IconButton
-            onClick={nextImage}
-            sx={{
-              position: 'absolute',
-              right: 16,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              bgcolor: 'rgba(0,0,0,0.5)',
-              color: 'white',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' }
-            }}
-          >
-            <ArrowForwardIos />
-          </IconButton>
-        </>
-      )}
-
-      {images.length > 1 && (
-        <Box sx={{
-          position: 'absolute',
-          bottom: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: 1
-        }}>
-          {images.map((_, index) => (
-            <Box
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: index === currentIndex ? 'white' : 'rgba(255,255,255,0.5)',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            />
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
-};
+import { useParams, useNavigate } from 'react-router-dom';
+import { projectsAPI, authAPI } from '../services/api';
+import ImageSlider from '../components/ImageSlider';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isAuthenticated, user } = useAuth();
 
   const [project, setProject] = useState(null);
   const [similarProjects, setSimilarProjects] = useState([]);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [donationOpen, setDonationOpen] = useState(false);
+  const [error, setError] = useState('');
+
+  // Donation modal state
+  const [showDonationModal, setShowDonationModal] = useState(false);
   const [donationAmount, setDonationAmount] = useState('');
-  const [donationLoading, setDonationLoading] = useState(false);
-  const [donationSuccess, setDonationSuccess] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [userRating, setUserRating] = useState(null);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [donating, setDonating] = useState(false);
 
-  // Project Management States
-  const [menuAnchor, setMenuAnchor] = useState(null);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
+  // Comment state
+  const [newComment, setNewComment] = useState('');
+  const [commenting, setCommenting] = useState(false);
 
-  const loadProjectData = useCallback(async () => {
-    if (!id) {
-      console.error('No project ID provided');
-      navigate('/projects');
-      return;
-    }
+  // Rating state
+  const [userRating, setUserRating] = useState(0);
+  const [rating, setRating] = useState(false);
+
+  const loadProjectDetails = useCallback(async () => {
+    if (!id) return;
 
     try {
       setLoading(true);
-      console.log('Loading project with ID:', id);
+      setError('');
 
-      const projectResponse = await projectsAPI.getDetail(id);
-      setProject(projectResponse.data);
+      // Load project details
+      const projectResponse = await projectsAPI.getProject(id);
+      const projectData = projectResponse.data;
 
-      // Try to load similar projects
-      try {
-        const similarResponse = await projectsAPI.getSimilar(id);
-        setSimilarProjects(similarResponse.data);
-      } catch (similarError) {
-        console.log('Similar projects not available:', similarError);
-        setSimilarProjects([]);
-      }
+      setProject(projectData);
+
+      // Load similar projects, comments in parallel (with better error handling)
+      const [similarResponse, commentsResponse] = await Promise.all([
+        projectsAPI.getSimilarProjects(id).catch((err) => {
+          console.log('Similar projects not available:', err);
+          return { data: [] };
+        }),
+        projectsAPI.getProjectComments(id).catch((err) => {
+          console.log('Comments not available:', err);
+          return { data: [] };
+        })
+      ]);
+
+      setSimilarProjects(Array.isArray(similarResponse.data) ? similarResponse.data : similarResponse.data?.results || []);
+      setComments(Array.isArray(commentsResponse.data) ? commentsResponse.data : commentsResponse.data?.results || []);
 
     } catch (error) {
       console.error('Failed to load project:', error);
-      navigate('/projects');
+      setError('Failed to load project details. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id]);
 
   useEffect(() => {
-    loadProjectData();
-  }, [loadProjectData]);
+    loadProjectDetails();
+  }, [loadProjectDetails]);
 
   const handleDonate = async () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    if (!donationAmount || donationAmount <= 0) return;
 
-    setDonationLoading(true);
+    setDonating(true);
     try {
-      await projectsAPI.donate(id, parseFloat(donationAmount));
-      setDonationSuccess(true);
-      setDonationOpen(false);
-
-      // Update project data
-      setProject(prev => ({
-        ...prev,
-        total_donations: prev.total_donations + parseFloat(donationAmount),
-        donations_count: (prev.donations_count || 0) + 1
-      }));
-
+      await projectsAPI.donateToProject(id, { amount: donationAmount });
+      setShowDonationModal(false);
       setDonationAmount('');
-
+      loadProjectDetails();
     } catch (error) {
       console.error('Donation failed:', error);
-      setErrors({ donation: 'Donation failed. Please try again.' });
     } finally {
-      setDonationLoading(false);
+      setDonating(false);
     }
   };
 
-  const handleRate = async (newRating) => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
 
+    setCommenting(true);
     try {
-      await projectsAPI.rate(id, newRating);
-      setUserRating(newRating);
-      loadProjectData();
+      await projectsAPI.addComment(id, { content: newComment });
+      setNewComment('');
+      loadProjectDetails();
     } catch (error) {
-      console.error('Rating failed:', error);
+      console.error('Failed to add comment:', error);
+    } finally {
+      setCommenting(false);
     }
   };
 
-  // Project Management Functions
-  const handleCancelProject = async () => {
-    if (!cancelReason.trim()) return;
-
+  const handleRateProject = async (value) => {
+    setRating(true);
     try {
-      await projectsAPI.cancelProject(id, cancelReason);
-      setCancelOpen(false);
-      setCancelReason('');
-      loadProjectData();
+      await projectsAPI.rateProject(id, { rating: value });
+      setUserRating(value);
+      loadProjectDetails();
     } catch (error) {
-      console.error('Failed to cancel project:', error);
+      console.error('Failed to rate project:', error);
+    } finally {
+      setRating(false);
     }
-  };
-
-  const canCancelProject = () => {
-    if (!project || !user) return false;
-    if (project.user?.id !== user.id) return false;
-
-    const progressPercentage = (project.total_donations / project.total_target) * 100;
-    return progressPercentage < 25;
   };
 
   const formatCurrency = (amount) => {
@@ -285,182 +149,202 @@ const ProjectDetail = () => {
       style: 'currency',
       currency: 'EGP',
       minimumFractionDigits: 0,
-    }).format(amount).replace('EGP', 'EGP');
+    }).format(amount || 0).replace('EGP', 'EGP');
   };
 
-  const getDaysRemaining = () => {
-    if (!project?.end_time) return null;
-    const endDate = new Date(project.end_time);
-    const today = new Date();
-    const diffTime = endDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to safely render category
+  const renderCategory = (category) => {
+    if (!category) return 'Uncategorized';
+    if (typeof category === 'string') return category;
+    if (typeof category === 'object' && category.name) return category.name;
+    return 'Uncategorized';
+  };
+
+  // Helper function to safely render tags
+  const renderTags = (tags) => {
+    if (!tags || !Array.isArray(tags)) return [];
+    return tags.map((tag, index) => {
+      const tagValue = typeof tag === 'string' ? tag : (tag.name || tag.toString());
+      return (
+        <Chip key={index} label={tagValue} size="small" variant="outlined" />
+      );
+    });
+  };
+
+  // Helper function to safely render user name
+  const renderUserName = (user) => {
+    if (!user) return 'Unknown User';
+    if (typeof user === 'string') return user;
+    if (typeof user === 'object') {
+      const firstName = user.first_name || '';
+      const lastName = user.last_name || '';
+      return `${firstName} ${lastName}`.trim() || 'Unknown User';
+    }
+    return 'Unknown User';
   };
 
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="h6">Loading project...</Typography>
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Loading project...
+        </Typography>
       </Container>
     );
   }
 
-  if (!project) {
+  if (error || !project) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="h6">Project not found</Typography>
-        <Button onClick={() => navigate('/projects')} sx={{ mt: 2 }}>
-          Browse Projects
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error || 'Project not found'}
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/projects')}>
+          Back to Projects
         </Button>
       </Container>
     );
   }
 
-  const progressPercentage = project ?
-    Math.min((project.total_donations / project.total_target) * 100, 100) : 0;
-
-  const daysRemaining = getDaysRemaining();
-  const shareUrl = `${window.location.origin}/projects/${id}`;
-  const shareTitle = project.title || 'Check out this amazing project!';
-  const isOwner = user && project.user?.id === user.id;
+  const progressPercentage = ((project.total_donations || 0) / (project.total_target || 1)) * 100;
+  const daysRemaining = Math.ceil((new Date(project.end_time) - new Date()) / (1000 * 60 * 60 * 24));
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Grid container spacing={4}>
         {/* Main Content */}
-        <Grid xs={12} md={8}>
-          {/* Project Images Slider */}
-          <Box sx={{ mb: 3 }}>
-            <ImageSlider images={project.pictures || []} />
-          </Box>
+        <Grid item xs={12} md={8}>
+          {/* Project Images */}
+          {project.pictures && project.pictures.length > 0 && (
+            <Box sx={{ mb: 4 }}>
+              <ImageSlider images={project.pictures} />
+            </Box>
+          )}
 
           {/* Project Info */}
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-              {project.category && (
-                <Chip
-                  label={project.category.name}
-                  color="primary"
-                  variant="outlined"
-                />
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Typography variant="h4" component="h1" gutterBottom>
+                {project.title || 'Untitled Project'}
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Chip label={renderCategory(project.category)} color="primary" />
+                <Rating value={project.average_rating || 0} readOnly size="small" />
+                <Typography variant="body2" color="text.secondary">
+                  ({project.ratings_count || 0} ratings)
+                </Typography>
+              </Box>
+
+              <Typography variant="body1" paragraph>
+                {project.details || 'No description available.'}
+              </Typography>
+
+              {/* Tags - FIXED: Properly handle tag rendering */}
+              {project.tags && project.tags.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {renderTags(project.tags)}
+                </Box>
               )}
 
-              {/* Project Management Menu */}
-              <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-                {/* Share Buttons */}
-                <FacebookShareButton url={shareUrl} quote={shareTitle}>
-                  <FacebookIcon size={32} round />
-                </FacebookShareButton>
-
-                <TwitterShareButton url={shareUrl} title={shareTitle}>
-                  <TwitterIcon size={32} round />
-                </TwitterShareButton>
-
-                <WhatsappShareButton url={shareUrl} title={shareTitle}>
-                  <WhatsappIcon size={32} round />
-                </WhatsappShareButton>
-
-                <IconButton
-                  onClick={() => setIsFavorited(!isFavorited)}
-                  sx={{ color: isFavorited ? '#FF6B35' : '#6B7280' }}
-                >
-                  {isFavorited ? <Favorite /> : <FavoriteBorder />}
-                </IconButton>
-
-                {/* Project Management Menu */}
-                {isAuthenticated && (
-                  <>
-                    <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
-                      <MoreVert />
-                    </IconButton>
-                    <Menu
-                      anchorEl={menuAnchor}
-                      open={Boolean(menuAnchor)}
-                      onClose={() => setMenuAnchor(null)}
-                    >
-                      {isOwner && (
-                        <MenuItem onClick={() => navigate(`/projects/${id}/edit`)}>
-                          <Edit sx={{ mr: 1 }} />
-                          Edit Project
-                        </MenuItem>
-                      )}
-                      {isOwner && canCancelProject() && (
-                        <MenuItem onClick={() => setCancelOpen(true)}>
-                          <Cancel sx={{ mr: 1 }} />
-                          Cancel Project
-                        </MenuItem>
-                      )}
-                      {!isOwner && (
-                        <MenuItem onClick={() => setReportOpen(true)}>
-                          <Report sx={{ mr: 1 }} />
-                          Report Project
-                        </MenuItem>
-                      )}
-                    </Menu>
-                  </>
-                )}
-              </Box>
-            </Box>
-
-            <Typography variant="h3" fontWeight="bold" sx={{ mb: 2, fontSize: { xs: '2rem', md: '3rem' } }}>
-              {project.title}
-            </Typography>
-
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
-              {project.details}
-            </Typography>
-
-            {/* Creator Info */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Avatar
-                src={project.user?.profile_picture}
-                sx={{ width: 48, height: 48, mr: 2 }}
-              >
-                <Person />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" fontWeight="500">
-                  {project.user?.first_name} {project.user?.last_name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Project Creator
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Rating Section */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Rate this project
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Rating
-                  value={userRating || rating}
-                  onChange={(event, newValue) => {
-                    setRating(newValue);
-                    handleRate(newValue);
-                  }}
-                  disabled={!isAuthenticated}
-                />
-                {project.average_rating > 0 && (
-                  <Typography variant="body2" color="text.secondary">
-                    Average: {project.average_rating.toFixed(1)} ({project.ratings_count} ratings)
+              {/* Creator Info - FIXED: Properly handle user object */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                <Avatar>
+                  {project.creator?.first_name?.[0] || <Person />}
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle2">
+                    Created by {renderUserName(project.creator)}
                   </Typography>
-                )}
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(project.created_at)}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          </Box>
+            </CardContent>
+          </Card>
 
           {/* Comments Section */}
-          <CommentSection projectId={id} />
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Comments ({comments.length})
+              </Typography>
+
+              {/* Add Comment */}
+              <Box sx={{ mb: 3 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleAddComment}
+                  disabled={commenting || !newComment.trim()}
+                  startIcon={<Comment />}
+                >
+                  {commenting ? 'Adding...' : 'Add Comment'}
+                </Button>
+              </Box>
+
+              <Divider sx={{ mb: 2 }} />
+
+              {/* Comments List - FIXED: Properly handle comment user objects */}
+              <List>
+                {comments.map((comment) => (
+                  <ListItem key={comment.id} alignItems="flex-start">
+                    <ListItemAvatar>
+                      <Avatar>
+                        {comment.user?.first_name?.[0] || <Person />}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="subtitle2">
+                            {renderUserName(comment.user)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(comment.created_at)}
+                          </Typography>
+                        </Box>
+                      }
+                      secondary={comment.content || 'No content'}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+
+              {comments.length === 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                  No comments yet. Be the first to comment!
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
 
         {/* Sidebar */}
-        <Grid xs={12} md={4}>
-          <Card sx={{ position: 'sticky', top: 20 }}>
-            <CardContent sx={{ p: 3 }}>
-              {/* Progress */}
-              <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
+        <Grid item xs={12} md={4}>
+          {/* Funding Progress */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h5" color="primary" gutterBottom>
                 {formatCurrency(project.total_donations)}
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -469,204 +353,154 @@ const ProjectDetail = () => {
 
               <LinearProgress
                 variant="determinate"
-                value={progressPercentage}
+                value={Math.min(progressPercentage, 100)}
                 sx={{
-                  mb: 2,
                   height: 8,
                   borderRadius: 4,
-                  bgcolor: '#F3F4F6',
+                  mb: 2,
+                  backgroundColor: '#f0f0f0',
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: '#00B964',
-                    borderRadius: 4
+                    backgroundColor: progressPercentage >= 100 ? '#4CAF50' : '#2C3E2D'
                   }
                 }}
               />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold">
-                    {progressPercentage.toFixed(0)}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    funded
-                  </Typography>
-                </Box>
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold">
-                    {project.donations_count || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    donors
-                  </Typography>
-                </Box>
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold">
-                    {daysRemaining || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    days left
-                  </Typography>
-                </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>{progressPercentage.toFixed(1)}%</strong> funded
+                </Typography>
+                <Typography variant="body2">
+                  <strong>{project.donations_count || 0}</strong> backers
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                <CalendarToday fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Campaign ended'}
+                </Typography>
               </Box>
 
               {/* Donate Button */}
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={() => setDonationOpen(true)}
-                disabled={daysRemaining === 0}
-                sx={{
-                  bgcolor: '#00B964',
-                  '&:hover': { bgcolor: '#00A855' },
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                {daysRemaining === 0 ? 'Campaign Ended' : 'Donate Now'}
-              </Button>
-
-              {!isAuthenticated && (
-                <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 2 }}>
-                  <Button variant="text" onClick={() => navigate('/login')}>
-                    Sign in
-                  </Button> to donate to this campaign
-                </Typography>
+              {daysRemaining > 0 && (
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={() => setShowDonationModal(true)}
+                  startIcon={<AttachMoney />}
+                  sx={{
+                    background: 'linear-gradient(135deg, #00B964 0%, #00A855 100%)',
+                    '&:hover': { background: 'linear-gradient(135deg, #00A855 0%, #009648 100%)' },
+                    mb: 2
+                  }}
+                >
+                  Back This Project
+                </Button>
               )}
+
+              {/* Action Buttons */}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Share />}
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: project.title,
+                        url: window.location.href
+                      }).catch(() => {
+                        navigator.clipboard.writeText(window.location.href);
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                    }
+                  }}
+                  sx={{ flex: 1 }}
+                >
+                  Share
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<Report />}
+                  color="error"
+                  sx={{ flex: 1 }}
+                >
+                  Report
+                </Button>
+              </Box>
             </CardContent>
           </Card>
+
+          {/* Rate Project */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Rate This Project
+              </Typography>
+              <Rating
+                value={userRating}
+                onChange={(event, newValue) => handleRateProject(newValue)}
+                disabled={rating}
+                size="large"
+              />
+            </CardContent>
+          </Card>
+
+          {/* Similar Projects - FIXED: Properly handle similar project objects */}
+          {similarProjects.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Similar Projects
+                </Typography>
+                {similarProjects.slice(0, 4).map((similarProject) => (
+                  <Card
+                    key={similarProject.id}
+                    sx={{ mb: 2, cursor: 'pointer' }}
+                    onClick={() => navigate(`/projects/${similarProject.id}`)}
+                  >
+                    <CardContent sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        {similarProject.title || 'Untitled Project'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {formatCurrency(similarProject.total_donations)} raised
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </Grid>
       </Grid>
 
-      {/* Similar Projects */}
-      {similarProjects.length > 0 && (
-        <Box sx={{ mt: 8 }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Similar campaigns
-          </Typography>
-          <Grid container spacing={3}>
-            {similarProjects.slice(0, 4).map(similarProject => (
-              <Grid xs={12} sm={6} md={3} key={similarProject.id}>
-                <ProjectCard project={similarProject} />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      )}
-
       {/* Donation Modal */}
-      <Dialog
-        open={donationOpen}
-        onClose={() => setDonationOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Support this campaign
-          <IconButton onClick={() => setDonationOpen(false)}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
+      <Dialog open={showDonationModal} onClose={() => setShowDonationModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Back This Project</DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Your donation will help {project.user?.first_name} reach their goal of {formatCurrency(project.total_target)}.
-          </Typography>
-
           <TextField
             fullWidth
-            label="Donation Amount (EGP)"
             type="number"
+            label="Donation Amount (EGP)"
             value={donationAmount}
             onChange={(e) => setDonationAmount(e.target.value)}
-            placeholder="Enter amount"
-            InputProps={{
-              inputProps: { min: 1 }
-            }}
-          />
-
-          {/* Quick amounts */}
-          <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {[25, 50, 100, 250, 500].map(amount => (
-              <Chip
-                key={amount}
-                label={`${amount} EGP`}
-                onClick={() => setDonationAmount(amount.toString())}
-                variant={donationAmount === amount.toString() ? 'filled' : 'outlined'}
-                color="primary"
-                clickable
-              />
-            ))}
-          </Box>
-
-          {errors.donation && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {errors.donation}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setDonationOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleDonate}
-            disabled={!donationAmount || donationLoading}
-            sx={{ bgcolor: '#00B964', '&:hover': { bgcolor: '#00A855' } }}
-          >
-            {donationLoading ? 'Processing...' : `Donate ${donationAmount ? formatCurrency(donationAmount) : ''}`}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Project Cancellation Modal */}
-      <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Cancel Project</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            This action cannot be undone. Your project will be permanently cancelled.
-          </Alert>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Current funding: {progressPercentage.toFixed(1)}% (Less than 25% threshold allows cancellation)
-          </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Reason for cancellation"
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            placeholder="Please explain why you're cancelling this project..."
-            required
+            inputProps={{ min: 1 }}
+            sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancelOpen(false)}>Cancel</Button>
-          <Button onClick={handleCancelProject} color="error" disabled={!cancelReason.trim()}>
-            Cancel Project
+          <Button onClick={() => setShowDonationModal(false)}>Cancel</Button>
+          <Button
+            onClick={handleDonate}
+            variant="contained"
+            disabled={donating || !donationAmount || donationAmount <= 0}
+          >
+            {donating ? 'Processing...' : `Donate ${formatCurrency(donationAmount)}`}
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Report Modal */}
-      <ReportModal
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        projectId={id}
-        type="project"
-      />
-
-      {/* Success Alert */}
-      {donationSuccess && (
-        <Alert
-          severity="success"
-          sx={{ position: 'fixed', top: 20, right: 20, zIndex: 9999 }}
-          onClose={() => setDonationSuccess(false)}
-        >
-          Thank you for your donation! 🎉
-        </Alert>
-      )}
     </Container>
   );
 };
